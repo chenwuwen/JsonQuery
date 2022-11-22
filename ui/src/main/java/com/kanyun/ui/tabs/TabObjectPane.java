@@ -1,8 +1,10 @@
 package com.kanyun.ui.tabs;
 
 import com.kanyun.ui.JsonQuery;
-import com.kanyun.ui.UserEvent;
-import com.kanyun.ui.model.DataBase;
+import com.kanyun.ui.event.UserEvent;
+import com.kanyun.ui.event.UserEventBridgeService;
+import com.kanyun.ui.model.DataBaseModel;
+import com.kanyun.ui.model.TableModel;
 import com.sun.javafx.event.EventUtil;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -14,11 +16,15 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ObjectsTab 主要用来显示数据库中的表
  */
 public class TabObjectPane extends VBox {
+
+    private static final Logger log = LoggerFactory.getLogger(TabObjectPane.class);
 
     public static final String TAB_NAME = "Objects";
 
@@ -42,8 +48,8 @@ public class TabObjectPane extends VBox {
         tableListPane.setHgap(20);
 //        tableListPane.
         if (StringUtils.isNotEmpty(dataBaseName)) {
-            ObservableList<DataBase> dataBases = JsonQuery.dataBases;
-            for (DataBase dataBase : dataBases) {
+            ObservableList<DataBaseModel> dataBases = JsonQuery.dataBaseModels;
+            for (DataBaseModel dataBase : dataBases) {
                 if (dataBase.getName().equals(dataBaseName)) {
                     ObservableList<String> tables = dataBase.getTables();
                     for (String table : tables) {
@@ -71,10 +77,10 @@ public class TabObjectPane extends VBox {
      */
     private void openTable(String dataBaseName, String tableName) {
         UserEvent userEvent = new UserEvent(UserEvent.QUERY_TABLE);
-        userEvent.setTableName(tableName);
-        userEvent.setDataBaseName(dataBaseName);
-        userEvent.setDataBaseName(dataBaseName);
-        Node lookup = getScene().lookup("#ContentPane");
-        EventUtil.fireEvent(lookup, userEvent);
+        TableModel tableModel = new TableModel();
+        tableModel.setTableName(tableName);
+        tableModel.setDataBaseName(dataBaseName);
+        userEvent.setTableModel(tableModel);
+        UserEventBridgeService.bridgeUserEvent2ContentPane(userEvent);
     }
 }

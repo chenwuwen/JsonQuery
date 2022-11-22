@@ -1,5 +1,6 @@
 package com.kanyun.sql.func;
 
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -31,7 +33,7 @@ public abstract class AbstractFuncSource {
     /**
      * 所有函数集合,key为函数名,value为函数所在的类
      */
-    private final Map<String, Class> userDefineFunctions = new HashMap<>();
+    private final static ConcurrentHashMap<String, Class> userDefineFunctions = new ConcurrentHashMap<>();
 
     /**
      * 解析jar包
@@ -77,12 +79,12 @@ public abstract class AbstractFuncSource {
     /**
      * 注册函数
      */
-    void registerFunction() {
+    public static void registerFunction(SchemaPlus schemaPlus) {
+        log.debug("=======开始注册函数======");
         Set<Map.Entry<String, Class>> entries = userDefineFunctions.entrySet();
         for (Map.Entry<String, Class> entry : entries) {
-            ScalarFunctionImpl.create(entry.getValue(), entry.getKey());
+            log.debug("函数信息：[{}.{}]", entry.getValue(), entry.getKey());
+            schemaPlus.add(entry.getKey(), ScalarFunctionImpl.create(entry.getValue(), entry.getKey()));
         }
-
-
     }
 }

@@ -1,5 +1,6 @@
 package com.kanyun.ui;
 
+import com.kanyun.ui.event.UserEventBridgeService;
 import com.kanyun.ui.layout.BottomInfoPane;
 import com.kanyun.ui.layout.ContentPane;
 import com.kanyun.ui.layout.DataBasePane;
@@ -9,11 +10,15 @@ import javafx.scene.Scene;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JsonQuery启动类
  */
 public class JsonQueryApplication extends Application {
+
+    private static final Logger log = LoggerFactory.getLogger(JsonQueryApplication.class);
 
     public static void main(String[] args) {
         launch(args);
@@ -59,17 +64,17 @@ public class JsonQueryApplication extends Application {
 
 //        布局设置到场景中去
         Scene scene = new Scene(rootPane);
-
+        UserEventBridgeService.setScene(scene);
 //        场景设置到窗口区域
         primaryStage.setScene(scene);
+
         primaryStage.show();
     }
 
     @Override
     public void init() throws Exception {
+        log.info("===========JsonQuery数据初始化===========");
         JsonQuery jsonQuery = new JsonQuery();
         jsonQuery.initConfig();
-
-
     }
 }

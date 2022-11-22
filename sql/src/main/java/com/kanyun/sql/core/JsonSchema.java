@@ -2,7 +2,6 @@ package com.kanyun.sql.core;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-import com.kanyun.calcite.table.JsonTable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.slf4j.Logger;

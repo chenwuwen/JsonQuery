@@ -24,6 +24,10 @@ public enum FuncSourceType implements FuncSelection {
     }
 
 
+    public String getType() {
+        return type;
+    }
+
     @Override
     public AbstractFuncSource newInstance() throws InstantiationException, IllegalAccessException {
         return null;

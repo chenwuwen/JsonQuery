@@ -17,8 +17,6 @@ public class FileFuncInstance extends AbstractFuncSource{
             URLClassLoader urlClassLoader = URLClassLoader.newInstance(new URL[]{url}, Thread.currentThread().getContextClassLoader());
             JarFile jarFile = new JarFile(file);
             parseJar(jarFile, urlClassLoader);
-
-
         }
     }
 }

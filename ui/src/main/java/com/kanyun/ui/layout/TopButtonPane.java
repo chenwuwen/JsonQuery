@@ -3,26 +3,44 @@ package com.kanyun.ui.layout;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXDialog;
 import com.jfoenix.controls.JFXDialogLayout;
-import com.jfoenix.controls.JFXTextField;
-import com.kanyun.ui.model.DataBase;
-import com.kanyun.ui.UserEvent;
+import com.kanyun.sql.func.AbstractFuncSource;
+import com.kanyun.sql.func.FuncSourceType;
+import com.kanyun.ui.JsonQuery;
+import com.kanyun.ui.components.FunctionDialog;
+import com.kanyun.ui.event.UserEvent;
+import com.kanyun.ui.event.UserEventBridgeService;
+import com.kanyun.ui.model.DataBaseModel;
+import com.sun.javafx.event.EventUtil;
 import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIcon;
 import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIconView;
-import func.AbstractFuncSource;
-import func.FuncSourceType;
+
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.StringJoiner;
 
+/**
+ * 顶部按钮区组件
+ */
 public class TopButtonPane extends FlowPane {
+
+    private static final Logger log = LoggerFactory.getLogger(TopButtonPane.class);
 
 
     public TopButtonPane() {
@@ -33,6 +51,7 @@ public class TopButtonPane extends FlowPane {
 //        imageView.setFitWidth(16);
 //        imageView.setFitHeight(16);
         JFXButton dataBaseBtn = new JFXButton("新建数据库", materialDesignIconView);
+
 //        dataBaseBtn.setPrefWidth();
         dataBaseBtn.setButtonType(JFXButton.ButtonType.FLAT);
         JFXButton queryBtn = new JFXButton("新的查询");
@@ -40,11 +59,8 @@ public class TopButtonPane extends FlowPane {
         JFXButton udfBtn = new JFXButton("添加函数");
 
         queryBtn.setOnAction(event -> {
-            System.out.println("发送新建查询事件,接收事件方是ContentPane");
             UserEvent userEvent = new UserEvent(UserEvent.NEW_QUERY);
-//            通过Scene然后查找指定Id的Node对象,也就是EventTarget,如果要接收响应的对象在同一个类,则不需要EventTarget
-            EventTarget contentPane = getScene().lookup("#ContentPane");
-            Event.fireEvent(contentPane, userEvent);
+            UserEventBridgeService.bridgeUserEvent2ContentPane(userEvent);
         });
 
         dataBaseBtn.setOnAction(event -> {
@@ -106,10 +122,12 @@ public class TopButtonPane extends FlowPane {
         Button btnCancel = (Button) dialogPane.lookupButton(ButtonType.CANCEL);
         jfxDialog.show();
         btnOk.setOnAction(event -> {
-            DataBase dataBase = new DataBase();
+            DataBaseModel dataBase = new DataBaseModel();
             dataBase.setName(dataBaseNameTextField.getText());
             dataBase.setUrl(dataBaseUrlTextField.getText());
-
+            UserEvent userEvent = new UserEvent(UserEvent.CREATE_DATABASE);
+            userEvent.setDataBaseModel(dataBase);
+            UserEventBridgeService.bridgeUserEvent2DataBasePane(userEvent);
         });
     }
 
@@ -117,83 +135,28 @@ public class TopButtonPane extends FlowPane {
      * 添加函数弹窗
      */
     private void addUdfDialog() {
-        Dialog jfxDialog = new Dialog();
+        Dialog dialog = new Dialog();
 //        javaFx Dialog无法关闭：https://www.freesion.com/article/8839730889/
-        DialogPane dialogPane = jfxDialog.getDialogPane();
+        DialogPane dialogPane = dialog.getDialogPane();
         ObservableList<ButtonType> buttonTypes = dialogPane.getButtonTypes();
-        buttonTypes.addAll(ButtonType.CLOSE);
-        Button btnClose = (Button) dialogPane.lookupButton(ButtonType.CLOSE);
-        btnClose.setVisible(false);
-        TabPane tabPane = new TabPane();
-        tabPane.setPadding(new Insets(0, 0, 0, 0));
-        tabPane.getTabs().addAll(createJarTab(), createMvnTab());
+        buttonTypes.addAll(ButtonType.APPLY);
+        Button btnApply = (Button) dialogPane.lookupButton(ButtonType.APPLY);
+//        btnApply.setVisible(false);
+
+        dialogPane.setPrefSize(500,300);
         dialogPane.setPadding(new Insets(0, 0, 0, 0));
-        dialogPane.setContent(tabPane);
-        jfxDialog.setTitle("添加自定义函数");
-        jfxDialog.show();
-    }
-
-    private Tab createJarTab() {
-        Tab jarTab = new Tab("Jar方式");
-        jarTab.setClosable(false);
-        GridPane gridPane = new GridPane();
-        gridPane.setAlignment(Pos.CENTER);
-        gridPane.setVgap(15);
-        Label jarPathLabel = new Label("Jar路径:");
-        TextField jarPathField = new TextField();
-        JFXButton btn = new JFXButton("确定");
-        gridPane.add(jarPathLabel, 0, 0);
-        gridPane.add(jarPathField, 1, 0);
-        gridPane.add(btn, 3, 3);
-        jarTab.setContent(gridPane);
-        btn.setOnAction(event -> {
-            System.out.println("添加函数,JAR方式：" + jarPathField.getText());
-            registerUdf(FuncSourceType.FILE, jarPathField.getText());
+        dialogPane.setStyle("-fx-border-color: #00ccff;");
+        FunctionDialog functionDialog = new FunctionDialog();
+        dialogPane.setContent(functionDialog);
+        btnApply.setOnAction(event -> {
+//            todo 此处无法使用事件传递机制,因为无法获取EventTarget,可能是因为Dialog会生成新的场景,暂时无法获取
+//            UserEventBridgeService.bridgeUserEvent2FunctionDialog(new UserEvent(UserEvent.APPLY_FUNC));
+            functionDialog.applyFunc();
         });
-        return jarTab;
+
+        dialog.setTitle("添加自定义函数");
+        dialog.showAndWait();
     }
 
-    private Tab createMvnTab() {
-        Tab mvnTab = new Tab("Maven方式");
-        mvnTab.setClosable(false);
-        GridPane gridPane = new GridPane();
-        gridPane.setAlignment(Pos.CENTER);
-        gridPane.setVgap(15);
-        Label groupIdLabel = new Label("groupId:");
-        TextField groupIdField = new TextField();
-        Label artifactIdLabel = new Label("artifactId:");
-        TextField artifactIdField = new TextField();
-        Label versionLabel = new Label("version:");
-        TextField versionField = new TextField();
-        JFXButton btn = new JFXButton("确定");
-        gridPane.add(groupIdLabel, 0, 0);
-        gridPane.add(groupIdField, 1, 0);
-        gridPane.add(artifactIdLabel, 0, 1);
-        gridPane.add(artifactIdField, 1, 1);
-        gridPane.add(versionLabel, 0, 2);
-        gridPane.add(versionField, 1, 2);
-        gridPane.add(btn, 3, 3);
-        mvnTab.setContent(gridPane);
-        btn.setOnAction(event -> {
-            System.out.println("添加函数,MAVEN方式：" + groupIdField.getText());
-            registerUdf(FuncSourceType.MAVEN, groupIdField.getText(), artifactIdField.getText(), versionField.getText());
-        });
-        return mvnTab;
-    }
 
-    /**
-     * 注册自定义函数
-     */
-    public void registerUdf(FuncSourceType funcSourceType, String... args) {
-        try {
-            AbstractFuncSource abstractFuncSource = funcSourceType.newInstance();
-            abstractFuncSource.loadJar(args);
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

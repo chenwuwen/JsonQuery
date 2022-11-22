@@ -2,7 +2,7 @@ package com.kanyun.ui.model;
 
 import javafx.collections.ObservableList;
 
-public class DataBase {
+public class DataBaseModel {
 
     /**
      * 数据库名称
@@ -16,9 +16,9 @@ public class DataBase {
     private String url;
 
     /**
-     * 数据库表集合
+     * 数据库表集合(不进行持久化,因为表的数量是变动的)
      */
-    private ObservableList<String> tables;
+    private transient ObservableList<String> tables;
 
     public String getName() {
         return name;
