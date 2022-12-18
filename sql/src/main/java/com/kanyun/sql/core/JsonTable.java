@@ -21,6 +21,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Set;
 
+/**
+ * JsonTable,JsonSchema中实例化
+ * getRowType()用来处理列的类型的
+ * scan()提供了全表扫面的功能，这里主要需要高速引擎，如何遍历及获取数据
+ */
 public class JsonTable extends AbstractTable implements ScannableTable {
 
 	private final File file;

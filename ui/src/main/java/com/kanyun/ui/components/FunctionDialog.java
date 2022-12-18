@@ -2,6 +2,7 @@ package com.kanyun.ui.components;
 
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXTextField;
+import com.kanyun.sql.func.AbstractFuncSource;
 import com.kanyun.sql.func.FuncSourceType;
 import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.event.UserEvent;
@@ -16,6 +17,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.controlsfx.control.NotificationPane;
+import org.controlsfx.dialog.ExceptionDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +53,8 @@ public class FunctionDialog extends StackPane {
      */
     private SimpleStringProperty mavenVersionProperty = new SimpleStringProperty();
 
+    private NotificationPane notificationPane = new NotificationPane();
+
     public FunctionDialog() {
         setId("FunctionDialog");
         setStyle("-fx-border-color: red;");
@@ -77,8 +82,17 @@ public class FunctionDialog extends StackPane {
         addEventHandler(UserEvent.APPLY_FUNC, event -> {
             applyFunc();
         });
+        notificationPane.setContent(new Label("仅支持public static 修饰的函数！"));
+        notificationPane.show();
     }
 
+
+
+    /**
+     * 创建Jar方式函数Tab
+     *
+     * @return
+     */
     private Tab createJarTab() {
         Tab jarTab = createCommonTab(FuncSourceType.FILE.getType());
         GridPane gridPane = new GridPane();
@@ -114,6 +128,11 @@ public class FunctionDialog extends StackPane {
         return jarTab;
     }
 
+    /**
+     * 创建Maven方式函数Tab
+     *
+     * @return
+     */
     private Tab createMvnTab() {
         Tab mvnTab = createCommonTab(FuncSourceType.MAVEN.getType());
         GridPane gridPane = new GridPane();
@@ -145,10 +164,10 @@ public class FunctionDialog extends StackPane {
      * @return
      */
     public Tab createCommonTab(String tabName) {
-        Tab mvnTab = new Tab(tabName);
-        mvnTab.setId(tabName);
-        mvnTab.setClosable(false);
-        return mvnTab;
+        Tab tab = new Tab(tabName);
+        tab.setId(tabName);
+        tab.setClosable(false);
+        return tab;
     }
 
     /**
@@ -175,8 +194,9 @@ public class FunctionDialog extends StackPane {
      */
     public void registerUdf(FuncSourceType funcSourceType, String... args) {
         try {
-//            AbstractFuncSource abstractFuncSource = funcSourceType.newInstance();
-//            abstractFuncSource.loadJar(args);
+            AbstractFuncSource abstractFuncSource = funcSourceType.newInstance();
+            abstractFuncSource.loadJar(args);
+//            添加的函数写入配置文件
             StringJoiner stringJoiner = new StringJoiner(":");
             for (String arg : args) {
                 stringJoiner.add(arg);
@@ -184,6 +204,9 @@ public class FunctionDialog extends StackPane {
             JsonQuery.persistenceFunctionConfig(funcSourceType, stringJoiner.toString());
         } catch (Exception e) {
             e.printStackTrace();
+            ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(new Exception());
+            sqlExecuteErrDialog.setTitle("添加函数失败");
+            sqlExecuteErrDialog.show();
         }
     }
 }

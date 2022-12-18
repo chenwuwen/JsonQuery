@@ -2,9 +2,13 @@ package com.kanyun.sql.core;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.kanyun.sql.SqlExecute;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * calcite model.json配置文件
@@ -49,6 +53,12 @@ public class ModelJson {
         modelJsonObj.addProperty("defaultSchema", defaultSchema);
         String modelJson = modelJsonObj.toString();
         log.info("生成的modelJson内容为[{}]", modelJson);
+        try {
+            log.info("=====准备生成CalciteConnection======");
+            SqlExecute.buildCalciteConnection(modelJson);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         return modelJson;
     }
 
@@ -72,10 +82,13 @@ public class ModelJson {
         JsonObject schemaObj = new JsonObject();
         schemaObj.addProperty("name", dataBaseName);
         schemaObj.addProperty("type", "custom");
+//        指定使用factory类
         schemaObj.addProperty("factory", "com.kanyun.sql.core.JsonSchemaFactory");
         JsonObject operand = new JsonObject();
         operand.addProperty("directory", path);
         schemaObj.add("operand", operand);
         return schemaObj;
     }
+
+
 }

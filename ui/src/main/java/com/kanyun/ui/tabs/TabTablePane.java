@@ -65,7 +65,7 @@ public class TabTablePane extends VBox {
         UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
         userEvent.setSql(sql);
         UserEventBridgeService.bridgeUserEvent2BottomInfoPane(userEvent);
-        return SqlExecute.execute(modelJson, sql);
+        return SqlExecute.execute(modelJson, defaultSchema, sql);
     }
 
     public TableColumn getTableColumn(String columnLabel, Integer columnType) {

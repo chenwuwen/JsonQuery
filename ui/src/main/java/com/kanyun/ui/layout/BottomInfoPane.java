@@ -4,10 +4,12 @@ import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.model.DataBaseModel;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -22,6 +24,8 @@ public class BottomInfoPane extends HBox {
 
     private static final Logger log = LoggerFactory.getLogger(DataBasePane.class);
 
+//    private SimpleStringProperty simpleStringProperty = new SimpleStringProperty();
+
     public BottomInfoPane() {
         setId("BottomInfoPane");
         setPrefHeight(30);
@@ -32,6 +36,7 @@ public class BottomInfoPane extends HBox {
 //        selectItemsLabel.setPadding(new Insets(0, 5, 0, 5));
         selectItemsLabel.setPrefWidth(160);
         selectItemsLabel.setText(JsonQuery.dataBaseModels.size() + "个数据库");
+//        selectItemsLabel.textProperty().bindBidirectional(simpleStringProperty);
         addEventHandler(UserEvent.DATABASE_MODIFY, event -> {
             selectItemsLabel.setText(JsonQuery.dataBaseModels.size() + "个数据库");
         });

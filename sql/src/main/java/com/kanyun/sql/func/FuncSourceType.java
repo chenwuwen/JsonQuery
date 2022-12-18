@@ -2,6 +2,7 @@ package com.kanyun.sql.func;
 
 /**
  * 函数类型枚举
+ * 枚举类型实现接口,则每个枚举实例都需要实现接口的方法
  */
 public enum FuncSourceType implements FuncSelection {
     MAVEN("maven"){

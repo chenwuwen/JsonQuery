@@ -1,6 +1,7 @@
 package com.kanyun.ui.layout;
 
 import com.google.common.io.Files;
+import com.jfoenix.controls.JFXListView;
 import com.jfoenix.controls.JFXTreeView;
 import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.event.UserEvent;
@@ -19,6 +20,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -40,6 +42,9 @@ public class DataBasePane extends VBox {
 
     private static final Logger log = LoggerFactory.getLogger(DataBasePane.class);
 
+
+    private static Integer dataBaseOrTableIconSize = 15;
+
     /**
      * 数据库列表
      */
@@ -49,33 +54,38 @@ public class DataBasePane extends VBox {
         setId("DataBasePane");
         setAlignment(Pos.TOP_LEFT);
 //        setPadding(new Insets(0,0,0,0));
-        dataBases = new ListView<>();
+        dataBases = new JFXListView<>();
+
+//        dataBases.setStyle("-fx-fixed-cell-size:0");
 //        在调整父节点高度时,子节点高度垂直增长.不设置此项,在没有其他子组件的情况下,listView无法占满Vbox的高度
         VBox.setVgrow(dataBases, Priority.ALWAYS);
 //        空白页显示内容
         dataBases.setPlaceholder(new Label("没有数据,请添加数据库"));
+//        数据库创建事件监听
         addEventHandler(UserEvent.CREATE_DATABASE, event -> {
             addDataBase(event.getDataBaseModel());
         });
 //        dataBases.setPrefHeight(getPrefHeight());
         ObservableList<DataBaseModel> dataBaseModels = JsonQuery.dataBaseModels;
         for (DataBaseModel dataBaseModel : dataBaseModels) {
-            dataBases.getItems().add(setDataBaseTree(dataBaseModel));
+            dataBases.getItems().add(getDataBaseTree(dataBaseModel));
         }
 
+//        dataBases.itemsProperty()
+//        dataBases.itemsProperty().
         getChildren().addAll(dataBases);
 
     }
 
     /**
-     * 设置数据库树结构
+     * 得到数据库树结构TreeView
      *
      * @param dataBase
      */
-    public JFXTreeView setDataBaseTree(DataBaseModel dataBase) {
+    public JFXTreeView getDataBaseTree(DataBaseModel dataBase) {
         JFXTreeView<String> dataBaseTreeView = new JFXTreeView();
         dataBaseTreeView.setId(dataBase.getName());
-//            节点选中改变监听(得到的是Index)
+//        节点选中改变监听(得到的是Index)
         dataBaseTreeView.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
@@ -97,14 +107,14 @@ public class DataBasePane extends VBox {
                 UserEventBridgeService.bridgeUserEvent2BottomInfoPane(userEvent);
             }
         });
-//            设置鼠标点击
+//        设置鼠标点击
         dataBaseTreeView.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
                 if (event.getClickCount() == 2) {
                     TreeItem<String> selectedItem = dataBaseTreeView.getSelectionModel().getSelectedItem();
                     if (selectedItem.isLeaf()) {
-//                            是叶子节点说明是表
+//                        是叶子节点说明是表
                         log.debug("DataBasePane组件双击了表:[{}]", selectedItem.getValue());
                         UserEvent userEvent = new UserEvent(UserEvent.QUERY_TABLE);
                         TableModel tableModel = new TableModel();
@@ -127,15 +137,23 @@ public class DataBasePane extends VBox {
         });
         dataBaseTreeView.setPadding(new Insets(0, 0, 0, 0));
         TreeItem<String> dataBaseRootTreeItem = new TreeItem<>(dataBase.getName());
-//            根节点默认不展开
+        ImageView databaseImageView = new ImageView("/asserts/database.png");
+        databaseImageView.setFitHeight(dataBaseOrTableIconSize);
+        databaseImageView.setFitWidth(dataBaseOrTableIconSize);
+        dataBaseRootTreeItem.setGraphic(databaseImageView);
+//        根节点默认不展开
         dataBaseRootTreeItem.setExpanded(false);
-//            设置根节点(即数据库名称)
+//        设置根节点(即数据库名称)
         dataBaseTreeView.setRoot(dataBaseRootTreeItem);
         Collection<File> tables = getDataBaseTable(dataBase.getUrl());
         List<String> tableNames = new ArrayList<>();
         for (File table : tables) {
             String tableName = Files.getNameWithoutExtension(table.getName());
             TreeItem<String> tableItem = new TreeItem<>(tableName);
+            ImageView tableImageView = new ImageView("/asserts/table.png");
+            tableImageView.setFitHeight(dataBaseOrTableIconSize);
+            tableImageView.setFitWidth(dataBaseOrTableIconSize);
+            tableItem.setGraphic(tableImageView);
             dataBaseRootTreeItem.getChildren().add(tableItem);
             tableNames.add(tableName);
         }
@@ -163,7 +181,7 @@ public class DataBasePane extends VBox {
      */
     public void addDataBase(DataBaseModel dataBaseModel) {
         JsonQuery.dataBaseModels.add(dataBaseModel);
-        dataBases.getItems().add(setDataBaseTree(dataBaseModel));
+        dataBases.getItems().add(getDataBaseTree(dataBaseModel));
         JsonQuery.persistenceConfig();
     }
 }

@@ -1,39 +1,24 @@
 package com.kanyun.ui.layout;
 
-import com.jfoenix.controls.JFXButton;
-import com.jfoenix.controls.JFXDialog;
-import com.jfoenix.controls.JFXDialogLayout;
-import com.kanyun.sql.func.AbstractFuncSource;
-import com.kanyun.sql.func.FuncSourceType;
-import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.components.FunctionDialog;
+import com.kanyun.ui.components.TopButtonComponent;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.event.UserEventBridgeService;
 import com.kanyun.ui.model.DataBaseModel;
-import com.sun.javafx.event.EventUtil;
-import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIcon;
-import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIconView;
-
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.Event;
-import javafx.event.EventHandler;
-import javafx.event.EventTarget;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.StringJoiner;
 
 /**
  * 顶部按钮区组件
@@ -44,30 +29,32 @@ public class TopButtonPane extends FlowPane {
 
 
     public TopButtonPane() {
+        setPrefHeight(50);
 //        setAlignment(Pos.CENTER_LEFT);
-        MaterialDesignIconView materialDesignIconView =
-                new MaterialDesignIconView(MaterialDesignIcon.THUMB_UP);
-//        ImageView imageView = new ImageView("/assets/茶壶.png");
-//        imageView.setFitWidth(16);
-//        imageView.setFitHeight(16);
-        JFXButton dataBaseBtn = new JFXButton("新建数据库", materialDesignIconView);
+//        MaterialDesignIconView materialDesignIconView =
+//                new MaterialDesignIconView(MaterialDesignIcon.THUMB_UP);
+//        设置元素排列方向
+        setOrientation(Orientation.HORIZONTAL);
+//        设置子节点元素间距
+        setHgap(20);
 
-//        dataBaseBtn.setPrefWidth();
-        dataBaseBtn.setButtonType(JFXButton.ButtonType.FLAT);
-        JFXButton queryBtn = new JFXButton("新的查询");
+        TopButtonComponent dataBaseBtn = new TopButtonComponent("新建", "/asserts/new_database.png");
 
-        JFXButton udfBtn = new JFXButton("添加函数");
 
-        queryBtn.setOnAction(event -> {
+        TopButtonComponent queryBtn = new TopButtonComponent("新的查询", "/asserts/query.png");
+
+        TopButtonComponent udfBtn = new TopButtonComponent("添加函数", "/asserts/function.png");
+
+        queryBtn.setOnMouseClicked(event -> {
             UserEvent userEvent = new UserEvent(UserEvent.NEW_QUERY);
             UserEventBridgeService.bridgeUserEvent2ContentPane(userEvent);
         });
 
-        dataBaseBtn.setOnAction(event -> {
+        dataBaseBtn.setOnMouseClicked(event -> {
             createDataBaseDialog();
         });
 
-        udfBtn.setOnAction(event -> {
+        udfBtn.setOnMouseClicked(event -> {
             addUdfDialog();
         });
 
@@ -143,7 +130,7 @@ public class TopButtonPane extends FlowPane {
         Button btnApply = (Button) dialogPane.lookupButton(ButtonType.APPLY);
 //        btnApply.setVisible(false);
 
-        dialogPane.setPrefSize(500,300);
+        dialogPane.setPrefSize(500, 300);
         dialogPane.setPadding(new Insets(0, 0, 0, 0));
         dialogPane.setStyle("-fx-border-color: #00ccff;");
         FunctionDialog functionDialog = new FunctionDialog();

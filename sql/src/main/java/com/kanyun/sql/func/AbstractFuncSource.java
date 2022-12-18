@@ -23,7 +23,10 @@ public abstract class AbstractFuncSource {
     private static Logger log = LoggerFactory.getLogger(AbstractFuncSource.class);
 
     /**
-     * 加载jar文件,由各个子类实现
+     * 加载jar文件,由各个子类实现,这里的参数是一个不定参数.
+     * 加载方法目前仅支持File和Maven.
+     * eg:file 参数可以为  /home/finance/aa.jar
+     * eg:maven 参数为 "com.google.code.gson","gson","2.9.1"
      *
      * @param args
      * @throws Exception
@@ -37,7 +40,7 @@ public abstract class AbstractFuncSource {
 
     /**
      * 解析jar包
-     *
+     * 并取出需要的函数,这里仅取出 public static 修饰的方法
      * @param jarFile
      * @param classLoader
      * @throws ClassNotFoundException

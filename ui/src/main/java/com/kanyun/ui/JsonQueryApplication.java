@@ -71,6 +71,10 @@ public class JsonQueryApplication extends Application {
         primaryStage.show();
     }
 
+    /**
+     * 不能在这个方法中创建Stage或Scene
+     * @throws Exception
+     */
     @Override
     public void init() throws Exception {
         log.info("===========JsonQuery数据初始化===========");
