@@ -67,16 +67,16 @@ public class SqlComponent extends SplitPane {
             try {
                 Pair<Map<String, Integer>, List<Map<String, Object>>> execute = SqlExecute.execute(modelJson, defaultSchema, sql);
                 List<String> columns = new ArrayList(execute.getLeft().keySet());
-                tableViewPane.setTableViewColumns(columns);
-                tableViewPane.setItems(FXCollections.observableList(execute.getRight()));
+                tableViewPane.setTableColumns(columns);
+                tableViewPane.setTableRows(FXCollections.observableList(execute.getRight()));
 //                移除tableView,再添加tableView(注意先判断当前项数量再移除)
                 if (getItems().size() > 1) {
                     getItems().remove(1);
                 }
                 getItems().add(tableViewPane);
-            } catch (SQLException exception) {
+            } catch (Exception exception) {
                 exception.printStackTrace();
-                ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(new Exception());
+                ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(exception);
                 sqlExecuteErrDialog.setTitle("SQL执行报错");
                 sqlExecuteErrDialog.show();
             }

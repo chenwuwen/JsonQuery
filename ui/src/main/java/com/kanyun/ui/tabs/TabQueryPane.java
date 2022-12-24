@@ -19,6 +19,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.transform.Translate;
 import javafx.util.Duration;
 import org.apache.commons.lang3.StringUtils;
 import org.controlsfx.control.SearchableComboBox;
@@ -105,8 +106,8 @@ public class TabQueryPane extends VBox {
 
 //        按钮释放事件
         runBtn.setOnMouseReleased(event -> {
-            if (mouseExits.get()) {
-//                鼠标释放时,只有鼠标还没有退出按钮才可以出发操作
+            if (!mouseExits.get()) {
+//                鼠标释放时,只有鼠标还没有退出按钮才可以触发操作
 //                执行反向动画
                 translateTransition.setRate(-1);
                 translateTransition.play();
@@ -140,6 +141,7 @@ public class TabQueryPane extends VBox {
         JFXButton beautifyBtn = new JFXButton("美化SQL", beautifyImageView);
 //        鼠标是否退出状态
         SimpleBooleanProperty mouseExits = new SimpleBooleanProperty(true);
+
         TranslateTransition translateTransition = getTranslateTransition(beautifyImageView);
 //        按钮按下事件
         beautifyBtn.setOnMousePressed(event -> {
@@ -150,8 +152,8 @@ public class TabQueryPane extends VBox {
 
 //        按钮释放事件
         beautifyBtn.setOnMouseReleased(event -> {
-            if (mouseExits.get()) {
-//                鼠标释放时,只有鼠标还没有退出按钮才可以出发操作
+            if (!mouseExits.get()) {
+//                鼠标释放时,只有鼠标还没有退出按钮才可以触发操作
 //                执行反向动画
                 translateTransition.setRate(-1);
                 translateTransition.play();

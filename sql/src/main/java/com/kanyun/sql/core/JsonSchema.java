@@ -56,7 +56,7 @@ public class JsonSchema extends AbstractSchema {
             String tableName = Files.getNameWithoutExtension(file.getName());
             log.debug("Schema:[{}], 创建表： [{}] 从文件  [{}]", schema, tableName, file.getPath());
 //             一个数据库有多个表名，这里初始化，大小写要注意了,这里tableName是json文件的文件名
-            builder.put(tableName, new JsonTable(file));
+            builder.put(tableName, new JsonTable(file, tableName, schema));
         }
         tableMap = builder.build();
         return tableMap;

@@ -27,11 +27,19 @@ public class TableViewPane extends StackPane {
         getChildren().add(tableView);
     }
 
-    public void setItems(ObservableList<Map<String, Object>> items) {
+    /**
+     * 设置表个内容
+     * @param items
+     */
+    public void setTableRows(ObservableList<Map<String, Object>> items) {
         tableView.setItems(items);
     }
 
-    public void setTableViewColumns(List<String> columns) {
+    /**
+     * 设置表格的字段信息
+     * @param columns
+     */
+    public void setTableColumns(List<String> columns) {
         Collections.sort(columns);
         for (String column : columns) {
             TableColumn<Map<String, Object>, String> col = new TableColumn<>(column);

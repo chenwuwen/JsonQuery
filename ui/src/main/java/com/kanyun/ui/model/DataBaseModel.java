@@ -2,7 +2,7 @@ package com.kanyun.ui.model;
 
 import javafx.collections.ObservableList;
 
-public class DataBaseModel {
+public class DataBaseModel implements BaseModel {
 
     /**
      * 数据库名称
@@ -42,5 +42,10 @@ public class DataBaseModel {
 
     public void setTables(ObservableList<String> tables) {
         this.tables = tables;
+    }
+
+    @Override
+    public String toString() {
+        return getName();
     }
 }

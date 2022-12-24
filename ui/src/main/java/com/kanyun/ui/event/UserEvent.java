@@ -35,6 +35,11 @@ public class UserEvent extends Event {
     public static final EventType<UserEvent> QUERY_DATABASE = new EventType<>(ANY, "QUERY_DATABASE");
 
     /**
+     * 检查表事件
+     */
+    public static final EventType<UserEvent> INSPECT_TABLE = new EventType<>(ANY, "INSPECT_TABLE");
+
+    /**
      * 新建数据库事件
      */
     public static final EventType<UserEvent> CREATE_DATABASE = new EventType<>(ANY, "CREATE_DATABASE");
@@ -51,9 +56,9 @@ public class UserEvent extends Event {
     public static final EventType<UserEvent> DATABASE_MODIFY = new EventType<>(ANY, "DATABASE_MODIFY");
 
     /**
-     * 选中元素数量变化事件
+     * 选中(或子项)元素数量变化事件,如:当前数据库数量,选中库下的表数量,选中的表(函数数量)
      */
-    public static final EventType<UserEvent> SELECT_ITEMS = new EventType<>(ANY, "SELECT_ITEMS");
+    public static final EventType<UserEvent> ITEMS_COUNT = new EventType<>(ANY, "ITEMS_COUNT");
 
 
     /**

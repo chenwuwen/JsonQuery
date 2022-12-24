@@ -7,23 +7,31 @@ import com.kanyun.sql.func.FuncSourceType;
 import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.model.JsonQueryConfig;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.controlsfx.control.NotificationPane;
+import org.controlsfx.control.Notifications;
 import org.controlsfx.dialog.ExceptionDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+
 import java.util.StringJoiner;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 添加函数弹窗
@@ -53,17 +61,20 @@ public class FunctionDialog extends StackPane {
      */
     private SimpleStringProperty mavenVersionProperty = new SimpleStringProperty();
 
+    /**
+     * 消息通知组件
+     */
     private NotificationPane notificationPane = new NotificationPane();
 
     public FunctionDialog() {
         setId("FunctionDialog");
         setStyle("-fx-border-color: red;");
-//        setPrefSize(400, 200);
-        setPadding(new Insets(0, 0, 0, 0));
         Tab jarTab = createJarTab();
         Tab mvnTab = createMvnTab();
         tabPane.getTabs().addAll(jarTab, mvnTab);
-        getChildren().add(tabPane);
+        setPadding(new Insets(0, 0, 0, 0));
+//        构建通知组件(提示文字,显示方向,主题,显示组件等)
+        buildFuncNotifyInfo(tabPane);
 //        如果函数之前设置过,则绑定对应的值,并选择到对应的tab页
         JsonQueryConfig jsonQueryConfig = JsonQuery.getJsonQueryConfig();
         if (jsonQueryConfig != null && jsonQueryConfig.getFuncType() != null) {
@@ -79,14 +90,54 @@ public class FunctionDialog extends StackPane {
                 tabPane.getSelectionModel().select(jarTab);
             }
         }
+        getChildren().add(notificationPane);
+//        此处监听失效,由外部调用applyFunc()方法
         addEventHandler(UserEvent.APPLY_FUNC, event -> {
             applyFunc();
         });
-        notificationPane.setContent(new Label("仅支持public static 修饰的函数！"));
-        notificationPane.show();
+//        直接在构造方法里显示通知是行不通的,除非使用异步任务
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                showFuncNotifyInfo();
+            }
+        });
     }
 
+    /**
+     * 构建函数提醒消息
+     */
+    public void buildFuncNotifyInfo(Node node) {
+//        设置通知位置(覆盖)
+        notificationPane.setContent(node);
+//        设置提醒文字
+        notificationPane.setText("注意：只识别 public static 修饰的方法,且jar包需包含依赖");
+//        设置提醒出现的方向
+        notificationPane.setShowFromTop(true);
+    }
 
+    /**
+     * 打开通知,这里需要注意，一定要先判断通知是否是显示状态
+     * 如果通知是显示状态,再次显示是没有效果的,因此需要先隐藏
+     * 再开启，需要注意的是通知组件是显示状态并不代表通知是显示的
+     */
+    public void showFuncNotifyInfo() {
+        if (notificationPane.isShowing()) {
+            notificationPane.hide();
+        }
+        notificationPane.show();
+//        Platform.runLater(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    TimeUnit.SECONDS.sleep(10);
+//                    notificationPane.hide();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+    }
 
     /**
      * 创建Jar方式函数Tab
@@ -204,7 +255,7 @@ public class FunctionDialog extends StackPane {
             JsonQuery.persistenceFunctionConfig(funcSourceType, stringJoiner.toString());
         } catch (Exception e) {
             e.printStackTrace();
-            ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(new Exception());
+            ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(e);
             sqlExecuteErrDialog.setTitle("添加函数失败");
             sqlExecuteErrDialog.show();
         }

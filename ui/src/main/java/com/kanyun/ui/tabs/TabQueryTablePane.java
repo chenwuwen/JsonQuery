@@ -21,33 +21,30 @@ import java.util.*;
 /**
  * 表全量数据Tab
  */
-public class TabTablePane extends VBox {
+public class TabQueryTablePane extends VBox {
 
-    private static final Logger log = LoggerFactory.getLogger(TabTablePane.class);
+    private static final Logger log = LoggerFactory.getLogger(TabQueryTablePane.class);
 
-    public TabTablePane(TableModel tableModel) {
+    public TabQueryTablePane(TableModel tableModel) throws Exception {
         log.debug("查询表页面被新建,[{}.{}] 被打开", tableModel.getDataBaseName(), tableModel.getTableName());
-
         try {
             Pair<Map<String, Integer>, List<Map<String, Object>>> result = getTableData(tableModel);
 //            字段名与字段类型映射信息
             Map<String, Integer> columnInfos = result.getLeft();
 //            表数据
             List<Map<String, Object>> data = result.getRight();
-
             List<String> columns = new ArrayList<String>(columnInfos.keySet());
-
+//            实例化自定义TableView组件
             TableViewPane tableViewPane = new TableViewPane();
-            tableViewPane.setTableViewColumns(columns);
-            tableViewPane.setItems(FXCollections.observableList(data));
-
+//            设置table列信息
+            tableViewPane.setTableColumns(columns);
+//            设置table行数据
+            tableViewPane.setTableRows(FXCollections.observableList(data));
             getChildren().add(tableViewPane);
-
-
-        } catch (SQLException exception) {
-            exception.printStackTrace();
+        } catch (Exception exception) {
+            log.error("打开表异常：", exception);
+            throw exception;
         }
-
     }
 
     /**
@@ -58,7 +55,7 @@ public class TabTablePane extends VBox {
      * @return
      * @throws SQLException
      */
-    public Pair<Map<String, Integer>, List<Map<String, Object>>> getTableData(TableModel tableModel) throws SQLException {
+    public Pair<Map<String, Integer>, List<Map<String, Object>>> getTableData(TableModel tableModel) throws Exception {
         String defaultSchema = tableModel.getDataBaseName();
         String modelJson = ModelJson.getModelJson(defaultSchema);
         String sql = "select * from " + tableModel.getDataBaseName() + "." + tableModel.getTableName();

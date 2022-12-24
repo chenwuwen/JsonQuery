@@ -15,6 +15,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import org.controlsfx.control.NotificationPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class TopButtonPane extends FlowPane {
 //        设置元素排列方向
         setOrientation(Orientation.HORIZONTAL);
 //        设置子节点元素间距
-        setHgap(20);
+        setHgap(30);
 
         TopButtonComponent dataBaseBtn = new TopButtonComponent("新建", "/asserts/new_database.png");
 
@@ -94,7 +95,6 @@ public class TopButtonPane extends FlowPane {
             File selectedDirectory = directoryChooser.showDialog(new Stage());
             if (selectedDirectory != null && selectedDirectory.isDirectory()) {
                 dataBaseUrlTextField.setText(selectedDirectory.getPath());
-
             }
         });
         gridPane.add(dataBaseNameLabel, 0, 0);
@@ -128,8 +128,6 @@ public class TopButtonPane extends FlowPane {
         ObservableList<ButtonType> buttonTypes = dialogPane.getButtonTypes();
         buttonTypes.addAll(ButtonType.APPLY);
         Button btnApply = (Button) dialogPane.lookupButton(ButtonType.APPLY);
-//        btnApply.setVisible(false);
-
         dialogPane.setPrefSize(500, 300);
         dialogPane.setPadding(new Insets(0, 0, 0, 0));
         dialogPane.setStyle("-fx-border-color: #00ccff;");
@@ -140,9 +138,14 @@ public class TopButtonPane extends FlowPane {
 //            UserEventBridgeService.bridgeUserEvent2FunctionDialog(new UserEvent(UserEvent.APPLY_FUNC));
             functionDialog.applyFunc();
         });
-
         dialog.setTitle("添加自定义函数");
+//        设置dialog显示后要执行的代码,此代码一定要放在dialog.show()方法之前,否则不起作用
+        dialog.setOnShown(event -> {
+//            已由FunctionDialog内部实现自动显示
+//            functionDialog.showFuncNotifyInfo();
+        });
         dialog.showAndWait();
+
     }
 
 

@@ -1,16 +1,18 @@
 package com.kanyun.ui.layout;
 
+import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.model.TableModel;
+import com.kanyun.ui.tabs.TabInspectTablePane;
 import com.kanyun.ui.tabs.TabObjectPane;
 import com.kanyun.ui.tabs.TabQueryPane;
-import com.kanyun.ui.tabs.TabTablePane;
-import com.kanyun.ui.event.UserEvent;
+import com.kanyun.ui.tabs.TabQueryTablePane;
 import javafx.collections.ObservableList;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import org.controlsfx.dialog.ExceptionDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +57,10 @@ public class ContentPane extends TabPane {
 //                        阻止事件传递 addEventHandler() 将不再执行
                         event.consume();
                     }
-
+                }
+                if (eventType == UserEvent.INSPECT_TABLE) {
+//                    如果是检查表,则继续执行
+                    return;
                 }
             }
         });
@@ -79,10 +84,19 @@ public class ContentPane extends TabPane {
             log.debug("ContentPane 接收到数据页,先确定是哪张表,然后开启tab页");
             String tabName = event.getTableModel().getTableName() + " @" + event.getTableModel().getDataBaseName();
             Tab tableTab = new Tab(tabName);
-            final TabTablePane tabTablePane = new TabTablePane(event.getTableModel());
-            tableTab.setContent(tabTablePane);
-            getTabs().add(tableTab);
-            getSelectionModel().select(tableTab);
+            try {
+                TabQueryTablePane tabQueryTablePane = new TabQueryTablePane(event.getTableModel());
+                tableTab.setContent(tabQueryTablePane);
+                getTabs().add(tableTab);
+                getSelectionModel().select(tableTab);
+            } catch (Exception e) {
+                e.printStackTrace();
+                ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(e);
+                sqlExecuteErrDialog.setTitle("打开表异常");
+                sqlExecuteErrDialog.show();
+            }
+
+
         });
 
         /**
@@ -94,6 +108,23 @@ public class ContentPane extends TabPane {
             final TabObjectPane tabObjectPane = new TabObjectPane(event.getDataBaseModel().getName());
             objectsTab.setContent(tabObjectPane);
             getSelectionModel().select(objectsTab);
+        });
+
+        /**
+         * 检查表事件监听
+         */
+        addEventHandler(UserEvent.INSPECT_TABLE, event -> {
+            log.debug("ContentPane 接收到对象页,检查表");
+            String tabName = event.getTableModel().getTableName() + " @" + event.getTableModel().getDataBaseName();
+            Tab tableInspectTab = new Tab(tabName);
+            try {
+                TabInspectTablePane tabInspectTablePane = new TabInspectTablePane(event.getTableModel());
+                tableInspectTab.setContent(tabInspectTablePane);
+                getTabs().add(tableInspectTab);
+                getSelectionModel().select(tableInspectTab);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
     }
