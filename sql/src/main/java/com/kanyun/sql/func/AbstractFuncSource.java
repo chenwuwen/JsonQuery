@@ -34,9 +34,20 @@ public abstract class AbstractFuncSource {
     public abstract void loadJar(String... args) throws Exception;
 
     /**
-     * 所有函数集合,key为函数名,value为函数所在的类
+     * 普通函数(UDF)集合,key为函数名,value为函数所在的类
      */
     private final static ConcurrentHashMap<String, Class> userDefineFunctions = new ConcurrentHashMap<>();
+
+    /**
+     * 用户自定义聚合类函数(UDAF),区别：UDF：一行返回一行，UDAF：多行返回一行,如sum()/count()/avg() 注意：distinct()不是聚合函数,它仅仅去重
+     * 用户定义的聚合函数类似于用户定义的函数，但是每个函数都有几个对应的Java方法，每个方法对应于聚合生命周期中的每个阶段:
+     * init 创建一个累加器
+     * add 将一行的值添加到累加器
+     * merge 将两个累加器合二为一
+     * result 完成累加器并将其转换为结果
+     * 也就是说,如果要定义聚合函数,一定要在类中定义上述的几个方法,方法修饰符为public static
+     */
+    private final static ConcurrentHashMap<String, Class> userDefineAggregateFunctions = new ConcurrentHashMap<>();
 
     /**
      * 解析jar包

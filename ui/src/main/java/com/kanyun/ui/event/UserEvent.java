@@ -5,6 +5,8 @@ import com.kanyun.ui.model.TableModel;
 import javafx.event.Event;
 import javafx.event.EventType;
 
+import java.util.Map;
+
 public class UserEvent extends Event {
 
     /**
@@ -21,6 +23,11 @@ public class UserEvent extends Event {
      * 执行的SQL
      */
     private String sql;
+
+    /**
+     * 查询过程的信息
+     */
+    private Map<String, Object> queryInfo;
 
     public static final EventType<UserEvent> ANY = new EventType<>(Event.ANY, "ANY");
 
@@ -49,7 +56,6 @@ public class UserEvent extends Event {
      */
     public static final EventType<UserEvent> QUERY_TABLE = new EventType<>(ANY, "QUERY_TABLE");
 
-
     /**
      * 数据库发生变化事件
      */
@@ -60,7 +66,6 @@ public class UserEvent extends Event {
      */
     public static final EventType<UserEvent> ITEMS_COUNT = new EventType<>(ANY, "ITEMS_COUNT");
 
-
     /**
      * 选择数据库事件
      */
@@ -70,6 +75,11 @@ public class UserEvent extends Event {
      * 执行SQL事件
      */
     public static final EventType<UserEvent> EXECUTE_SQL = new EventType<>(ANY, "EXECUTE_SQL");
+
+    /**
+     * SQL执行完成事件
+     */
+    public static final EventType<UserEvent> EXECUTE_SQL_COMPLETE = new EventType<>(ANY, "EXECUTE_SQL_COMPLETE");
 
     /**
      * 美化按钮
@@ -108,5 +118,13 @@ public class UserEvent extends Event {
 
     public void setSql(String sql) {
         this.sql = sql;
+    }
+
+    public Map<String, Object> getQueryInfo() {
+        return queryInfo;
+    }
+
+    public void setQueryInfo(Map<String, Object> queryInfo) {
+        this.queryInfo = queryInfo;
     }
 }

@@ -52,6 +52,9 @@ public class SqlExecute {
      */
     public static void buildCalciteConnection(String modelJson) throws SQLException {
         if (calciteConnection != null) return;
+//        另一种获取链接的方法
+//        info.put("model",modelJson)
+//        Connection connection =  DriverManager.getConnection("jdbc:calcite:", info);
 //        获取连接,此操作将初始化数据库,将调用 com.kanyun.sql.core.JsonSchemaFactory
         Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
 //       转换为Calcite连接
@@ -83,10 +86,12 @@ public class SqlExecute {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         log.info("准备执行SQL：[{}]", sql);
-        SqlParseHelper.getKind(sql);
+//        SqlParseHelper.getKind(sql);
 //        执行SQL脚本
         ResultSet resultSet = statement.executeQuery(sql);
         stopWatch.stop();
+        QueryInfoHolder.setQueryCost(stopWatch.getTime(TimeUnit.MILLISECONDS));
+        QueryInfoHolder.setRecordCount(resultSet.getFetchSize());
         log.info("SQL执行用时：[{}毫秒] ", stopWatch.getTime(TimeUnit.MILLISECONDS));
 //        得到执行结果,取出元数据信息,并得到字段数量
         int columnCount = resultSet.getMetaData().getColumnCount();

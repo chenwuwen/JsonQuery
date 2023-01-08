@@ -21,6 +21,8 @@ import javafx.scene.control.TreeView;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
@@ -53,6 +55,8 @@ public class DataBasePane extends VBox {
         setId("DataBasePane");
         setAlignment(Pos.TOP_LEFT);
         dataBasesTreeView = new JFXTreeView();
+//        设置子节点垂直方向总是填充父节点
+        VBox.setVgrow(dataBasesTreeView, Priority.ALWAYS);
 //        数据库创建事件监听
         addEventHandler(UserEvent.CREATE_DATABASE, event -> {
             addDataBase(event.getDataBaseModel());

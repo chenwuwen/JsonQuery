@@ -79,9 +79,16 @@
                 <artifactId>antlr4-runtime</artifactId>
                 <version>4.10.1</version>
             </dependency>
+            <!--calcite-core 只支持select查询和DML(INSERT,UPDATE,DELETE,MERGE),DDL(CREATE SCHEMA 或 CREATE TABLE)并不支持-->
             <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-core</artifactId>
+                <version>1.23.0</version>
+            </dependency>
+            <!--自定义sql解析必须使用calcite-core依赖,如果需要扩展DDL,也可以再引用calcite-server依赖-->
+            <dependency>
+                <groupId>org.apache.calcite</groupId>
+                <artifactId>calcite-server</artifactId>
                 <version>1.23.0</version>
             </dependency>
 

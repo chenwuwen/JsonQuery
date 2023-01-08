@@ -1,0 +1,28 @@
+TopButtonComponent:hover {
+    -fx-background-color: linear-gradient(to right,#00fffc,#fff600);
+    -fx-effect: dropshadow(gaussian, black, 5, 0, 0, 0);
+    /*边框到背景的距离*/
+    -fx-background-insets: -1;
+    /*背景圆角*/
+    -fx-background-radius: 5;
+    /*边框宽度*/
+    -fx-border-width: 2;
+}
+
+TopButtonComponent:pressed {
+    -fx-background-color: #235891;
+}
+
+.button:hover {
+    -fx-background-color: rgba(120, 111, 111, 0.53);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.31), 5, 0, 0, 0);
+    /*背景圆角*/
+    -fx-background-radius: 5;
+    /*边框宽度*/
+    -fx-border-width: 2;
+    -fx-background-insets: -1;
+}
+
+.button:pressed {
+    -fx-background-color: #235891;
+}

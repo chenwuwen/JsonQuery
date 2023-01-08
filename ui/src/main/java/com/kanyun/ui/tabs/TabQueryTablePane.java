@@ -1,5 +1,6 @@
 package com.kanyun.ui.tabs;
 
+import com.kanyun.sql.QueryInfoHolder;
 import com.kanyun.sql.SqlExecute;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.components.TableViewPane;
@@ -29,6 +30,7 @@ public class TabQueryTablePane extends VBox {
         log.debug("查询表页面被新建,[{}.{}] 被打开", tableModel.getDataBaseName(), tableModel.getTableName());
         try {
             Pair<Map<String, Integer>, List<Map<String, Object>>> result = getTableData(tableModel);
+
 //            字段名与字段类型映射信息
             Map<String, Integer> columnInfos = result.getLeft();
 //            表数据

@@ -34,27 +34,30 @@ public class TopButtonPane extends FlowPane {
 //        setAlignment(Pos.CENTER_LEFT);
 //        MaterialDesignIconView materialDesignIconView =
 //                new MaterialDesignIconView(MaterialDesignIcon.THUMB_UP);
+//        设置内边距,避免第一个子元素离左边框太近
+        setPadding(new Insets(5,0,5,30));
 //        设置元素排列方向
         setOrientation(Orientation.HORIZONTAL);
 //        设置子节点元素间距
-        setHgap(30);
+        setHgap(50);
 
         TopButtonComponent dataBaseBtn = new TopButtonComponent("新建", "/asserts/new_database.png");
-
 
         TopButtonComponent queryBtn = new TopButtonComponent("新的查询", "/asserts/query.png");
 
         TopButtonComponent udfBtn = new TopButtonComponent("添加函数", "/asserts/function.png");
 
+//        新建查询按钮点击事件
         queryBtn.setOnMouseClicked(event -> {
             UserEvent userEvent = new UserEvent(UserEvent.NEW_QUERY);
             UserEventBridgeService.bridgeUserEvent2ContentPane(userEvent);
         });
-
+//        添加数据库按钮点击事件
         dataBaseBtn.setOnMouseClicked(event -> {
             createDataBaseDialog();
         });
 
+//        自定义函数按钮点击事件
         udfBtn.setOnMouseClicked(event -> {
             addUdfDialog();
         });

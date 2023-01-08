@@ -14,10 +14,12 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.transform.Translate;
 import javafx.util.Duration;
@@ -38,6 +40,11 @@ public class TabQueryPane extends VBox {
     private static final Integer TOOLBAR_IMG_SIZE = 15;
 
     /**
+     * SQL组件
+     */
+    private SqlComponent sqlComponent;
+
+    /**
      * 当前Schema
      */
     private SimpleStringProperty currentSchema = new SimpleStringProperty();
@@ -47,10 +54,13 @@ public class TabQueryPane extends VBox {
 //        工具栏
         HBox toolBar = new HBox();
 //        设置子组件间间距
-        toolBar.setSpacing(5);
+        toolBar.setSpacing(10);
+        toolBar.setPadding(new Insets(5,0,5,2));
         initToolBar(toolBar);
 //        初始化SQL组件
-        SqlComponent sqlComponent = new SqlComponent();
+        sqlComponent = new SqlComponent();
+//        设置SQL子组件总是填充剩余空间
+        VBox.setVgrow(sqlComponent, Priority.ALWAYS);
         getChildren().addAll(toolBar, sqlComponent);
     }
 
@@ -97,6 +107,7 @@ public class TabQueryPane extends VBox {
 //        鼠标是否退出状态
         SimpleBooleanProperty mouseExits = new SimpleBooleanProperty(true);
         TranslateTransition translateTransition = getTranslateTransition(runImageView);
+
 //        按钮按下事件
         runBtn.setOnMousePressed(event -> {
 //            执行正向动画
@@ -115,6 +126,10 @@ public class TabQueryPane extends VBox {
                 DataBaseModel dataBaseModel = new DataBaseModel();
                 dataBaseModel.setName(currentSchema.get());
                 userEvent.setDataBaseModel(dataBaseModel);
+                userEvent.setSql(sqlComponent.getCurrentSql());
+//                发射事件,将执行的SQL设置到信息栏中
+                UserEventBridgeService.bridgeUserEvent2BottomInfoPane(userEvent);
+//                发射事件去执行SQL
                 UserEventBridgeService.bridgeUserEvent2SqlComponent(userEvent);
             }
         });

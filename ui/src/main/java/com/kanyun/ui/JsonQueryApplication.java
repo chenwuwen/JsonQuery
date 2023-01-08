@@ -70,7 +70,7 @@ public class JsonQueryApplication extends Application {
      *
      * @param stage
      */
-    public void setMainLayout(Stage stage) {
+    public void setMainLayout(Stage splashStage) {
 //        主体布局
         BorderPane rootPane = new BorderPane();
         rootPane.setPrefHeight(500);
@@ -109,8 +109,20 @@ public class JsonQueryApplication extends Application {
             }
         });
 
+//        切换场景需要注意：如果前一个场景跟当前场景使用同一个Stage时,后一个场景的左上角坐标会与第一个场景的左上角坐标重叠,这样当前后
+//        两个场景的大小不一致时,会导致后一个场景的窗口不居中,此时可以使用Stage.centerOnScreen()方法使窗口居中,但是这样在切换场景
+//        后会存在一个窗口移动的问题,同时也可以先将窗口隐藏(Stage.hide()),再设置居中,再设置窗口显示(Stage.show()),这样存在一个窗口
+//        闪动的问题,解决方案是创建一个新窗口,在新窗口展示后,再将原来的窗口关闭,如果原来的窗口不关闭,则系统会出现两个窗口,需要注意的是
+//        新窗口也要设置好标题等相关元素
+//        将窗口重定位到屏幕中间位置
+//        splashStage.centerOnScreen();
+        Stage mainStage = new Stage();
+        mainStage.setTitle(splashStage.getTitle());
+        scene.getStylesheets().add("css/button.css");
 //        场景设置到窗口区域
-        stage.setScene(scene);
+        mainStage.setScene(scene);
+        mainStage.show();
+        splashStage.close();
     }
 
     /**
