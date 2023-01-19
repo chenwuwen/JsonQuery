@@ -168,7 +168,7 @@ public class DataBasePane extends VBox {
         log.debug("准备刷新数据库:[{}],删除当前节点的所有子节点,再重建子节点", dataBaseModel.getName());
 //        移除当前节点所有子节点
         ObservableList<TreeItem<BaseModel>> children = selectedItem.getChildren();
-        selectedItem.getChildren().remove(children);
+        selectedItem.getChildren().removeAll(children);
 //        重建当前节点树结构
         buildTableItem(dataBaseModel, selectedItem);
         JsonQuery.persistenceConfig();
