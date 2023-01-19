@@ -8,6 +8,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.StatusBar;
 import org.controlsfx.control.spreadsheet.GridBase;
 import org.controlsfx.control.spreadsheet.SpreadsheetCell;
 import org.controlsfx.control.spreadsheet.SpreadsheetCellType;
@@ -20,7 +21,7 @@ import java.util.Map;
 /**
  * 检查表Tab
  */
-public class TabInspectTablePane extends VBox {
+public class TabInspectTablePane extends VBox implements TabKind{
 
     private static final Logger log = LoggerFactory.getLogger(TabInspectTablePane.class);
 
@@ -70,6 +71,26 @@ public class TabInspectTablePane extends VBox {
         Button button = new Button("保存");
 //        工具栏添加子元素
         toolBar.getChildren().addAll(button);
+    }
+
+    @Override
+    public TabKindEnum getTabKind() {
+        return TabKindEnum.INSPECT_TAB;
+    }
+
+    @Override
+    public void createDynamicInfoStatusBar() {
+
+    }
+
+    @Override
+    public StatusBar getDynamicInfoStatusBar() {
+        return null;
+    }
+
+    @Override
+    public void addStatusBarEventListener() {
+
     }
 
 }

@@ -9,6 +9,7 @@ import com.kanyun.ui.event.ExecuteSqlService;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.event.UserEventBridgeService;
 import com.kanyun.ui.layout.TopButtonPane;
+import com.sun.javafx.event.EventUtil;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -18,6 +19,7 @@ import javafx.geometry.Orientation;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import org.apache.calcite.util.Static;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.controlsfx.dialog.ExceptionDialog;
 import org.slf4j.Logger;
@@ -42,6 +44,9 @@ public class SqlComponent extends SplitPane {
      */
     private static ExecutorService sqlExecutor = Executors.newCachedThreadPool();
 
+    /**
+     * 异步任务Service
+     */
     private ExecuteSqlService executeSqlService;
 
     /**
@@ -71,35 +76,58 @@ public class SqlComponent extends SplitPane {
 //        sqlArea.textProperty().bind(sqlProperty);
         sqlProperty.bind(sqlArea.textProperty());
         executeSqlService = new ExecuteSqlService();
-
-        addListener();
+        addAsyncTaskListener();
     }
 
-    private void addListener() {
-//        监听SQL执行
-        addEventHandler(UserEvent.EXECUTE_SQL, event -> {
-            log.warn("88999");
-            String sql = sqlProperty.get();
-            String defaultSchema = event.getDataBaseModel().getName();
-            String modelJson = ModelJson.getModelJson(defaultSchema);
-            executeSqlService.setSql(sql).setDefaultSchema(defaultSchema).setModelJson(modelJson);
-            executeSqlService.start();
-        });
+    /**
+     * 异步执行SQL
+     *
+     * @param defaultSchema
+     */
+    public void executeSQL(String defaultSchema) {
+        String sql = sqlProperty.get();
+        String modelJson = ModelJson.getModelJson(defaultSchema);
+        if (executeSqlService.isRunning()) {
+            log.warn("准备执行SQL:[{}],查询到异步任务当前为运行状态");
+        }
+        executeSqlService.setSql(sql).setDefaultSchema(defaultSchema).setModelJson(modelJson);
+//        javaFx Service异步任务执行start()方法时,需要保证Service为ready状态,service成功执行后其状态时successed状态,因此再任务结束后(成功/失败/取消),要重置service的状态
+        executeSqlService.start();
+    }
 
-//        美化SQL事件
-        addEventHandler(UserEvent.BEAUTIFY_SQL, event -> {
-            String sql = sqlProperty.get();
-            String beautifySql = SqlFormatter.standard().format(sql);
-            sqlArea.setText(beautifySql);
-        });
+    /**
+     * 美化SQL
+     */
+    public void beautifySQL() {
+        String sql = sqlProperty.get();
+        if (StringUtils.isEmpty(sql)) return;
+        String beautifySql = SqlFormatter.standard().format(sql);
+        sqlArea.setText(beautifySql);
+    }
 
+    /**
+     * 取消SQL执行
+     */
+    public void stopSQL() {
+        if (executeSqlService.isRunning()) {
+            boolean cancel = executeSqlService.cancel();
+            log.debug("当前SQL任务:[{}],正在执行,取消任务执行,操作结果:[{}],并重置任务状态[setOnCancelled()]", getCurrentSql(), cancel);
+        }
+    }
+
+    /**
+     * 添加异步任务监听器
+     */
+    private void addAsyncTaskListener() {
+//        异步任务成功执行完成
         executeSqlService.setOnSucceeded(event -> {
-            Object value = event.getSource().getValue();
-            Pair<Map<String, Integer>, List<Map<String, Object>>> execute = (Pair<Map<String, Integer>, List<Map<String, Object>>>) value;
+            log.debug("异步任务[{}]成功执行完成,将发射事件给父组件,用以更新动态信息栏", getCurrentSql());
+            Object result = event.getSource().getValue();
+            Pair<Map<String, Integer>, List<Map<String, Object>>> execute = (Pair<Map<String, Integer>, List<Map<String, Object>>>) result;
             List<String> columns = new ArrayList(execute.getLeft().keySet());
             tableViewPane.setTableColumns(columns);
             tableViewPane.setTableRows(FXCollections.observableList(execute.getRight()));
-//                移除tableView,再添加tableView(注意先判断当前项数量再移除),注意:getItems().add(1,tableViewPane)这种形式是有问题的
+//            移除tableView,再添加tableView(注意先判断当前项数量再移除),注意:getItems().add(1,tableViewPane)这种形式是有问题的
             if (getItems().size() > 1) {
                 getItems().remove(1);
             }
@@ -107,11 +135,26 @@ public class SqlComponent extends SplitPane {
 //            发送SQL执行完成事件
             UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_COMPLETE);
             userEvent.setQueryInfo(executeSqlService.getQueryInfo());
-            UserEventBridgeService.bridgeUserEvent2BottomInfoPane(userEvent);
+//            给该组件的父组件发射SQL执行完成事件
+            EventUtil.fireEvent(getParent(), userEvent);
+            executeSqlService.reset();
         });
 
+//        异步任务执行失败
         executeSqlService.setOnFailed(event -> {
+            log.error("异步任务[{}]执行失败", getCurrentSql(), event.getSource().getException());
+//            executeSqlService
+            UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_FAIL);
+            userEvent.setException(event.getSource().getException());
+//            给该组件的父组件发射SQL执行完成事件
+            EventUtil.fireEvent(getParent(), userEvent);
+            executeSqlService.reset();
+        });
 
+//        异步任务取消
+        executeSqlService.setOnCancelled(event -> {
+            log.warn("异步任务[{}]被取消", getCurrentSql());
+            executeSqlService.reset();
         });
     }
 
@@ -125,29 +168,4 @@ public class SqlComponent extends SplitPane {
         return sqlArea.getText();
     }
 
-    /**
-     * 执行SQL并且更新UI
-     */
-    private void executeSqlAndUpdateUI(String modelJson, String defaultSchema, String sql) {
-        try {
-
-            Pair<Map<String, Integer>, List<Map<String, Object>>> execute = SqlExecute.execute(modelJson, defaultSchema, sql);
-            UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_COMPLETE);
-            userEvent.setQueryInfo(QueryInfoHolder.getQueryInfo());
-            UserEventBridgeService.bridgeUserEvent2BottomInfoPane(userEvent);
-            List<String> columns = new ArrayList(execute.getLeft().keySet());
-            tableViewPane.setTableColumns(columns);
-            tableViewPane.setTableRows(FXCollections.observableList(execute.getRight()));
-//                移除tableView,再添加tableView(注意先判断当前项数量再移除),注意:getItems().add(1,tableViewPane)这种形式是有问题的
-            if (getItems().size() > 1) {
-                getItems().remove(1);
-            }
-            getItems().add(tableViewPane);
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(exception);
-            sqlExecuteErrDialog.setTitle("SQL执行报错");
-            sqlExecuteErrDialog.show();
-        }
-    }
 }

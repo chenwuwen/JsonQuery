@@ -80,6 +80,17 @@ public class UserEventBridgeService {
     }
 
     /**
+     * 事件发射到BottomInfoPane组件
+     *
+     * @param event
+     */
+    public static void bridgeUserEvent2TabObjectsPane(Event event) {
+        log.debug("事件桥接服务,接收到[{}]类型的事件,该事件由TabObjectsPane.class监听", event.getEventType().getName());
+        Node eventTarget = scene.lookup("#TabObjectsPane");
+        EventUtil.fireEvent(eventTarget, event);
+    }
+
+    /**
      * 事件发射到FunctionDialog组件
      *
      * @param event

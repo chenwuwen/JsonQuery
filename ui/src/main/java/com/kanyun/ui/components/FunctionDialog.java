@@ -155,7 +155,7 @@ public class FunctionDialog extends StackPane {
         JFXButton jarPathSelectBtn = new JFXButton("Jar路径");
         jarPathSelectBtn.setPrefWidth(gridPane.getPrefWidth());
         JFXTextField jarPathField = new JFXTextField();
-        jarPathField.textProperty().bind(jarPathProperty);
+        jarPathField.textProperty().bindBidirectional(jarPathProperty);
 //        设置文本框的placeHolder
 //        jarPathField.setPromptText("Jar包路径");
         gridPane.add(jarPathLabel, 0, 0);

@@ -62,6 +62,15 @@ public class SqlExecute {
     }
 
     /**
+     * 重建Calcite连接
+     */
+    public static void rebuildCalciteConnection(String modelJson) throws SQLException {
+        Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
+//       转换为Calcite连接
+        calciteConnection = connection.unwrap(CalciteConnection.class);
+    }
+
+    /**
      * 执行SQL
      *
      * @param modelJson     calcite model.json文件
@@ -71,6 +80,7 @@ public class SqlExecute {
      * @throws SQLException
      */
     public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) throws Exception {
+        TimeUnit.SECONDS.sleep(5);
         buildCalciteConnection(modelJson);
 //        取出rootSchema,需要注意的是rootSchema不等于model.json中的defaultSchema,rootSchema一般是空
         SchemaPlus rootSchema = calciteConnection.getRootSchema();

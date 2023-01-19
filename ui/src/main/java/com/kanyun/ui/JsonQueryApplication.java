@@ -1,5 +1,6 @@
 package com.kanyun.ui;
 
+import com.jfoenix.assets.JFoenixResources;
 import com.kanyun.ui.components.SplashPane;
 import com.kanyun.ui.event.UserEventBridgeService;
 import com.kanyun.ui.layout.BottomInfoPane;
@@ -76,6 +77,11 @@ public class JsonQueryApplication extends Application {
         rootPane.setPrefHeight(500);
         rootPane.setPrefWidth(800);
 
+//        布局设置到场景中去(原来定义Scene是在布局完成后定义的,由于组件:ContentPane在初始化时,需要使用Scene发射事件,因此提前定义)
+        Scene scene = new Scene(rootPane);
+//        设置事件桥接类中的Scene引用
+        UserEventBridgeService.setScene(scene);
+
 //        上方按钮区域
         TopButtonPane topButtonPane = new TopButtonPane();
         rootPane.setTop(topButtonPane);
@@ -83,6 +89,7 @@ public class JsonQueryApplication extends Application {
 //        下方信息区域
         BottomInfoPane bottomInfoPane = new BottomInfoPane();
         rootPane.setBottom(bottomInfoPane);
+
 //        中间分割区域
         SplitPane centerPane = new SplitPane();
 
@@ -97,9 +104,7 @@ public class JsonQueryApplication extends Application {
         centerPane.setDividerPositions(0.2);
         rootPane.setCenter(centerPane);
 
-//        布局设置到场景中去
-        Scene scene = new Scene(rootPane);
-        UserEventBridgeService.setScene(scene);
+
 //        监听分割组件中的第一个子组件的分割大小,然后改变BottomInfoPane中的dataBaseInfoStatusBar的大小
         centerPane.getDividers().get(0).positionProperty().addListener(new ChangeListener<Number>() {
             @Override
@@ -118,7 +123,9 @@ public class JsonQueryApplication extends Application {
 //        splashStage.centerOnScreen();
         Stage mainStage = new Stage();
         mainStage.setTitle(splashStage.getTitle());
-        scene.getStylesheets().add("css/button.css");
+        scene.getStylesheets().addAll("css/button.css","css/components.css");
+        scene.getStylesheets().add(JFoenixResources.load("css/jfoenix-design.css").toExternalForm());
+        scene.getStylesheets().add(JFoenixResources.load("css/jfoenix-fonts.css").toExternalForm());
 //        场景设置到窗口区域
         mainStage.setScene(scene);
         mainStage.show();

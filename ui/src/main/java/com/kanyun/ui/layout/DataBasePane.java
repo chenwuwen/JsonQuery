@@ -3,10 +3,12 @@ package com.kanyun.ui.layout;
 import com.google.common.io.Files;
 import com.jfoenix.controls.JFXTreeView;
 import com.kanyun.ui.JsonQuery;
+import com.kanyun.ui.components.DataBaseDialog;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.event.UserEventBridgeService;
 import com.kanyun.ui.model.BaseModel;
 import com.kanyun.ui.model.DataBaseModel;
+import com.kanyun.ui.model.JsonQueryConfig;
 import com.kanyun.ui.model.TableModel;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -14,10 +16,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -67,7 +66,7 @@ public class DataBasePane extends VBox {
 //        不显示根节点
         dataBasesTreeView.setShowRoot(false);
         for (DataBaseModel dataBaseModel : dataBaseModels) {
-            rootTreeItem.getChildren().add(getDataBaseItem(dataBaseModel));
+            rootTreeItem.getChildren().add(buildDataBaseItem(dataBaseModel));
         }
 //        设置数据库树的根节点
         dataBasesTreeView.setRoot(rootTreeItem);
@@ -76,17 +75,28 @@ public class DataBasePane extends VBox {
     }
 
     /**
-     * 得到数据库树字结构(不含根节点)
+     * 构建根节点下数据库Item(不含根节点)
      *
      * @param dataBase
      */
-    public TreeItem<BaseModel> getDataBaseItem(DataBaseModel dataBase) {
+    public TreeItem<BaseModel> buildDataBaseItem(DataBaseModel dataBase) {
 //        创建数据库item(注意,我们传入的是对象,此时属性值也设置好了,而item展示的值就是设置对象的toString()的返回值),因此TreeItem没有单独的设置扩展属性的方法
         TreeItem<BaseModel> dataBaseItem = new TreeItem<>(dataBase);
         ImageView databaseImageView = new ImageView("/asserts/database.png");
         databaseImageView.setFitHeight(dataBaseOrTableIconSize);
         databaseImageView.setFitWidth(dataBaseOrTableIconSize);
         dataBaseItem.setGraphic(databaseImageView);
+        buildTableItem(dataBase, dataBaseItem);
+        return dataBaseItem;
+    }
+
+    /**
+     * 构建数据库下的表Item
+     *
+     * @param dataBase
+     * @param dataBaseItem
+     */
+    public void buildTableItem(DataBaseModel dataBase, TreeItem<BaseModel> dataBaseItem) {
         Collection<File> tables = getDataBaseTable(dataBase.getUrl());
         List<String> tableNames = new ArrayList<>();
         for (File table : tables) {
@@ -107,7 +117,6 @@ public class DataBasePane extends VBox {
             tableNames.add(tableName);
         }
         dataBase.setTables(FXCollections.observableList(tableNames));
-        return dataBaseItem;
     }
 
     /**
@@ -130,7 +139,7 @@ public class DataBasePane extends VBox {
      */
     public void addDataBase(DataBaseModel dataBaseModel) {
         JsonQuery.dataBaseModels.add(dataBaseModel);
-        dataBasesTreeView.getRoot().getChildren().add(getDataBaseItem(dataBaseModel));
+        dataBasesTreeView.getRoot().getChildren().add(buildDataBaseItem(dataBaseModel));
         JsonQuery.persistenceConfig();
     }
 
@@ -147,8 +156,53 @@ public class DataBasePane extends VBox {
             JsonQuery.dataBaseModels.remove(dataBaseModel);
 //            JsonQuery.persistenceConfig();
         }
+    }
 
+    /**
+     * 刷新数据库,当数据库中新增/删除json文件时,动态添加表
+     *
+     * @param selectedItem
+     */
+    public void refreshDataBase(TreeItem<BaseModel> selectedItem) {
+        DataBaseModel dataBaseModel = (DataBaseModel) selectedItem.getValue();
+        log.debug("准备刷新数据库:[{}],删除当前节点的所有子节点,再重建子节点", dataBaseModel.getName());
+//        移除当前节点所有子节点
+        ObservableList<TreeItem<BaseModel>> children = selectedItem.getChildren();
+        selectedItem.getChildren().remove(children);
+//        重建当前节点树结构
+        buildTableItem(dataBaseModel, selectedItem);
+        JsonQuery.persistenceConfig();
+    }
 
+    /**
+     * 编辑数据库
+     *
+     * @param selectedItem
+     */
+    public void updDataBase(TreeItem<BaseModel> selectedItem) {
+//        得到待编辑的数据库
+        DataBaseModel currentDataBaseModel = (DataBaseModel) selectedItem.getValue();
+        DataBaseDialog dataBaseDialog = new DataBaseDialog("编辑数据库") {
+            @Override
+            protected void apply(String dataBaseName, String dataBaseUrl) {
+                log.debug("编辑后的数据库名:[{}],路径:[{}]", dataBaseName, dataBaseUrl);
+                if (currentDataBaseModel.getName().equals(dataBaseName) && dataBaseUrl.equals(currentDataBaseModel.getUrl())) {
+                    return;
+                }
+//                先移除之前的,再添加新的
+                JsonQuery.dataBaseModels.remove(currentDataBaseModel);
+                DataBaseModel dataBaseModel = new DataBaseModel();
+                dataBaseModel.setName(dataBaseName);
+                dataBaseModel.setUrl(dataBaseUrl);
+//                TreeView移除当前选中节点
+                dataBasesTreeView.getRoot().getChildren().remove(selectedItem);
+//                TreeView添加新创建的节点(修改)
+                dataBasesTreeView.getRoot().getChildren().add(buildDataBaseItem(dataBaseModel));
+                JsonQuery.persistenceConfig();
+            }
+        };
+//        将当前选中的数据库信息带入到弹窗中
+        dataBaseDialog.setDataBaseNameAndDataBaseUrl(currentDataBaseModel.getName(), currentDataBaseModel.getUrl()).show(this);
     }
 
     /**
@@ -166,14 +220,31 @@ public class DataBasePane extends VBox {
         dataBasesTreeView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<TreeItem<BaseModel>>() {
             @Override
             public void changed(ObservableValue<? extends TreeItem<BaseModel>> observable, TreeItem<BaseModel> oldValue, TreeItem<BaseModel> newValue) {
-                UserEvent userEvent = new UserEvent(UserEvent.CURRENT_DATABASE);
                 TreeItem<BaseModel> dataBaseItem = newValue;
                 if (newValue.isLeaf()) {
                     dataBaseItem = newValue.getParent();
                 }
+//                发送事件到TabObjectsPane,用以更新TabObjectsPane的动态信息栏
+                UserEvent userEvent = new UserEvent(UserEvent.CURRENT_DATABASE);
                 DataBaseModel dataBaseModel = (DataBaseModel) dataBaseItem.getValue();
                 userEvent.setDataBaseModel(dataBaseModel);
-                UserEventBridgeService.bridgeUserEvent2BottomInfoPane(userEvent);
+                UserEventBridgeService.bridgeUserEvent2TabObjectsPane(userEvent);
+
+                userEvent = new UserEvent(UserEvent.SHOW_OBJECTS);
+                if (newValue.isExpanded() && dataBasesTreeView.getTreeItemLevel(newValue) == 1) {
+//                    判断当前选择的点击是否是展开状态,如果是,且点击的是数据库,则TabObjectsPane将设置内容
+                    userEvent.setDataBaseModel(dataBaseModel);
+                    UserEventBridgeService.bridgeUserEvent2TabObjectsPane(userEvent);
+                }
+                if (!newValue.isExpanded() && dataBasesTreeView.getTreeItemLevel(newValue) == 2) {
+//                    判断当前选择的点击是否是展开状态,如果不是,且点击的是表,则TabObjectsPane将设置内容
+                    userEvent.setDataBaseModel(dataBaseModel);
+                }
+                if (!newValue.isExpanded() && dataBasesTreeView.getTreeItemLevel(newValue) == 1) {
+//                    如果节点非展开状态,且点击的是数据库,则清空TabObjectsPane中的内容(除了TabObjectsPane中的动态信息栏)
+                    userEvent.setDataBaseModel(null);
+                }
+                UserEventBridgeService.bridgeUserEvent2TabObjectsPane(userEvent);
             }
         });
 //        设置鼠标点击事件监听
@@ -196,6 +267,8 @@ public class DataBasePane extends VBox {
 //        判断是否是右键
         if (button == MouseButton.SECONDARY) {
             MenuItem delDatabaseItem = new MenuItem("移除数据库");
+            MenuItem updDatabaseItem = new MenuItem("编辑数据库");
+            MenuItem refreshDatabaseItem = new MenuItem("刷新数据库");
             MenuItem inspectTable = new MenuItem("检查表");
             ContextMenu menu = new ContextMenu();
             TreeItem<BaseModel> selectedItem = dataBasesTreeView.getSelectionModel().getSelectedItem();
@@ -210,12 +283,20 @@ public class DataBasePane extends VBox {
             }
 //            说明右键的是数据库
             if (treeItemLevel == 1) {
-                menu.getItems().add(delDatabaseItem);
+                menu.getItems().addAll(refreshDatabaseItem, updDatabaseItem, delDatabaseItem);
                 dataBasesTreeView.setContextMenu(menu);
             }
 //            点击了删除数据库
             delDatabaseItem.setOnAction(e -> {
                 delDataBase(selectedItem);
+            });
+//            点击了修改数据库
+            updDatabaseItem.setOnAction(e -> {
+                updDataBase(selectedItem);
+            });
+//            点击了刷新数据库
+            refreshDatabaseItem.setOnAction(e -> {
+                refreshDataBase(selectedItem);
             });
 //            点击了检查表按钮
             inspectTable.setOnAction(e -> {
@@ -238,6 +319,7 @@ public class DataBasePane extends VBox {
     private void setMouseDoubleClickHandler(MouseEvent event) {
         if (event.getClickCount() == 2) {
             TreeItem<BaseModel> selectedItem = dataBasesTreeView.getSelectionModel().getSelectedItem();
+            if (selectedItem == null) return;
 //           得到当前树项的层级,root为0
             int treeItemLevel = dataBasesTreeView.getTreeItemLevel(selectedItem);
             if (selectedItem.isLeaf()) {

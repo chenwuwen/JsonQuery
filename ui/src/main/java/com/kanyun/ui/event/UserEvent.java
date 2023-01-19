@@ -4,9 +4,13 @@ import com.kanyun.ui.model.DataBaseModel;
 import com.kanyun.ui.model.TableModel;
 import javafx.event.Event;
 import javafx.event.EventType;
+import org.controlsfx.control.StatusBar;
 
 import java.util.Map;
 
+/**
+ * 自定义事件
+ */
 public class UserEvent extends Event {
 
     /**
@@ -28,6 +32,13 @@ public class UserEvent extends Event {
      * 查询过程的信息
      */
     private Map<String, Object> queryInfo;
+
+    /**
+     * 状态条
+     */
+    private StatusBar statusBar;
+
+    private Throwable exception;
 
     public static final EventType<UserEvent> ANY = new EventType<>(Event.ANY, "ANY");
 
@@ -82,14 +93,24 @@ public class UserEvent extends Event {
     public static final EventType<UserEvent> EXECUTE_SQL_COMPLETE = new EventType<>(ANY, "EXECUTE_SQL_COMPLETE");
 
     /**
-     * 美化按钮
+     * SQL执行失败事件
      */
-    public static final EventType<UserEvent> BEAUTIFY_SQL = new EventType<>(ANY, "BEAUTIFY_SQL");
+    public static final EventType<UserEvent> EXECUTE_SQL_FAIL = new EventType<>(ANY, "EXECUTE_SQL_FAIL");
 
     /**
      * 应用函数事件
      */
     public static final EventType<UserEvent> APPLY_FUNC = new EventType<>(ANY, "APPLY_FUNC");
+
+    /**
+     * 显示Objects事件
+     */
+    public static final EventType<UserEvent> SHOW_OBJECTS = new EventType<>(ANY, "SHOW_OBJECTS");
+
+    /**
+     * 动态设置Statusbar事件
+     */
+    public static final EventType<UserEvent> DYNAMIC_SETTING_STATUS_BAR = new EventType<>(ANY, "DYNAMIC_SETTING_STATUS_BAR");
 
 
     public UserEvent(EventType<? extends Event> eventType) {
@@ -126,5 +147,21 @@ public class UserEvent extends Event {
 
     public void setQueryInfo(Map<String, Object> queryInfo) {
         this.queryInfo = queryInfo;
+    }
+
+    public StatusBar getStatusBar() {
+        return statusBar;
+    }
+
+    public void setStatusBar(StatusBar statusBar) {
+        this.statusBar = statusBar;
+    }
+
+    public Throwable getException() {
+        return exception;
+    }
+
+    public void setException(Throwable exception) {
+        this.exception = exception;
     }
 }

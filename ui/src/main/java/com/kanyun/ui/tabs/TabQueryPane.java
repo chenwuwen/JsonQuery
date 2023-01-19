@@ -1,13 +1,15 @@
 package com.kanyun.ui.tabs;
 
 import com.jfoenix.controls.JFXButton;
-import com.jfoenix.controls.JFXComboBox;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.components.SqlComponent;
+import com.kanyun.ui.event.StatusBarProgressTask;
 import com.kanyun.ui.event.UserEvent;
-import com.kanyun.ui.event.UserEventBridgeService;
 import com.kanyun.ui.model.DataBaseModel;
+import com.sun.javafx.event.EventUtil;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.animation.TranslateTransition;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -15,26 +17,34 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.transform.Translate;
+import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import org.apache.commons.lang3.StringUtils;
 import org.controlsfx.control.SearchableComboBox;
+import org.controlsfx.control.StatusBar;
+import org.controlsfx.dialog.ExceptionDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
  * 新建查询Tab
  */
-public class TabQueryPane extends VBox {
+public class TabQueryPane extends VBox implements TabKind {
     private static final Logger log = LoggerFactory.getLogger(TabQueryPane.class);
 
     private static final Integer TOOLBAR_IMG_SIZE = 15;
@@ -45,23 +55,59 @@ public class TabQueryPane extends VBox {
     private SqlComponent sqlComponent;
 
     /**
+     * 动态信息栏
+     */
+    private StatusBar dynamicInfoStatusBar;
+
+    /**
+     * 动态信息属性
+     */
+    private SimpleStringProperty dynamicInfoProperty = new SimpleStringProperty();
+
+    /**
+     * 运行SQL按钮
+     */
+    private Button runButton;
+
+    /**
+     * 停止SQL运行按钮
+     */
+    private Button stopButton;
+
+    /**
+     * 当前正在执行的SQL
+     */
+    private String currentExecuteSql;
+
+    /**
+     * 进度条展示异步任务线程池(主要用来执行进度条展示),静态变量
+     */
+    private static ExecutorService progressTaskExecutorPool = Executors.newCachedThreadPool();
+
+    /**
+     * 自定义StatusBar进度条任务
+     */
+    private StatusBarProgressTask statusBarProgressTask;
+
+    /**
      * 当前Schema
      */
     private SimpleStringProperty currentSchema = new SimpleStringProperty();
 
     public TabQueryPane() {
-        log.debug("TabQueryPane 新建查询页面被打开,当前默认数据库是：[{}]");
+        log.debug("TabQueryPane 新建查询页面被打开,当前默认数据库是：[{}]",currentSchema.get());
 //        工具栏
         HBox toolBar = new HBox();
 //        设置子组件间间距
         toolBar.setSpacing(10);
-        toolBar.setPadding(new Insets(5,0,5,2));
+        toolBar.setPadding(new Insets(5, 0, 5, 2));
         initToolBar(toolBar);
 //        初始化SQL组件
         sqlComponent = new SqlComponent();
 //        设置SQL子组件总是填充剩余空间
         VBox.setVgrow(sqlComponent, Priority.ALWAYS);
         getChildren().addAll(toolBar, sqlComponent);
+        createDynamicInfoStatusBar();
     }
 
     /**
@@ -87,9 +133,10 @@ public class TabQueryPane extends VBox {
             dataBaseComboBox.getSelectionModel().select(defaultSchema);
             currentSchema.set(defaultSchema);
         }
-
+        runButton = getRunButton();
+        stopButton = getStopButton();
 //        工具栏添加子元素
-        toolBar.getChildren().addAll(dataBaseComboBox, getRunButton(), getBeautifyButton());
+        toolBar.getChildren().addAll(dataBaseComboBox, runButton, stopButton, getBeautifyButton());
     }
 
 
@@ -99,7 +146,10 @@ public class TabQueryPane extends VBox {
      * @return
      */
     public Button getRunButton() {
-        JFXButton runBtn = new JFXButton("运行");
+        FontAwesomeIconView fontAwesomeIcon
+                = new FontAwesomeIconView(FontAwesomeIcon.PLAY);
+        fontAwesomeIcon.setFill(Color.GREEN);
+        JFXButton runBtn = new JFXButton("运行", fontAwesomeIcon);
         ImageView runImageView = new ImageView("/asserts/run.png");
         runImageView.setFitWidth(TOOLBAR_IMG_SIZE);
         runImageView.setFitHeight(TOOLBAR_IMG_SIZE);
@@ -122,15 +172,14 @@ public class TabQueryPane extends VBox {
 //                执行反向动画
                 translateTransition.setRate(-1);
                 translateTransition.play();
+                currentExecuteSql = sqlComponent.getCurrentSql();
+                if (StringUtils.isEmpty(currentExecuteSql)) return;
                 UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
-                DataBaseModel dataBaseModel = new DataBaseModel();
-                dataBaseModel.setName(currentSchema.get());
-                userEvent.setDataBaseModel(dataBaseModel);
                 userEvent.setSql(sqlComponent.getCurrentSql());
 //                发射事件,将执行的SQL设置到信息栏中
-                UserEventBridgeService.bridgeUserEvent2BottomInfoPane(userEvent);
-//                发射事件去执行SQL
-                UserEventBridgeService.bridgeUserEvent2SqlComponent(userEvent);
+                EventUtil.fireEvent(this, userEvent);
+//                执行SQL
+                sqlComponent.executeSQL(currentSchema.get());
             }
         });
 
@@ -145,45 +194,74 @@ public class TabQueryPane extends VBox {
     }
 
     /**
+     * 创建SQL停止查询按钮
+     *
+     * @return
+     */
+    public Button getStopButton() {
+        FontAwesomeIconView fontAwesomeIcon
+                = new FontAwesomeIconView(FontAwesomeIcon.STOP);
+        fontAwesomeIcon.setFill(Color.RED);
+        JFXButton stopBtn = new JFXButton("停止", fontAwesomeIcon);
+//        按钮默认被禁用,当点击运行按钮时,该按钮启用
+        stopBtn.setDisable(true);
+        stopBtn.setOnAction(event -> {
+            log.debug("停止SQL执行按钮被触发,停止SQL：[{}] 执行", currentExecuteSql);
+            sqlComponent.stopSQL();
+            stopSqlExecuteProgressTask();
+            controlButtonEnableOrDisable(true);
+        });
+        return stopBtn;
+    }
+
+    /**
      * 创建SQL美化按钮
      *
      * @return
      */
     public Button getBeautifyButton() {
+        FontAwesomeIconView fontAwesomeIcon
+                = new FontAwesomeIconView(FontAwesomeIcon.MAGIC);
+        fontAwesomeIcon.setFill(Color.BLUE);
         ImageView beautifyImageView = new ImageView("/asserts/beautify.png");
         beautifyImageView.setFitWidth(TOOLBAR_IMG_SIZE);
         beautifyImageView.setFitHeight(TOOLBAR_IMG_SIZE);
-        JFXButton beautifyBtn = new JFXButton("美化SQL", beautifyImageView);
+        JFXButton beautifyBtn = new JFXButton("美化SQL", fontAwesomeIcon);
+
 //        鼠标是否退出状态
         SimpleBooleanProperty mouseExits = new SimpleBooleanProperty(true);
 
         TranslateTransition translateTransition = getTranslateTransition(beautifyImageView);
+
+        beautifyBtn.setOnAction(event -> {
+            sqlComponent.beautifySQL();
+        });
+
 //        按钮按下事件
-        beautifyBtn.setOnMousePressed(event -> {
-//            执行正向动画
-            translateTransition.setRate(1);
-            translateTransition.play();
-        });
-
-//        按钮释放事件
-        beautifyBtn.setOnMouseReleased(event -> {
-            if (!mouseExits.get()) {
-//                鼠标释放时,只有鼠标还没有退出按钮才可以触发操作
-//                执行反向动画
-                translateTransition.setRate(-1);
-                translateTransition.play();
-                UserEvent userEvent = new UserEvent(UserEvent.BEAUTIFY_SQL);
-                UserEventBridgeService.bridgeUserEvent2SqlComponent(userEvent);
-            }
-        });
-
-//        鼠标退出事件
-        beautifyBtn.setOnMouseExited(event -> {
-//            执行反向动画
-            translateTransition.setRate(-1);
-            translateTransition.play();
-            mouseExits.set(false);
-        });
+//        beautifyBtn.setOnMousePressed(event -> {
+////            执行正向动画
+//            translateTransition.setRate(1);
+//            translateTransition.play();
+//        });
+//
+////        按钮释放事件
+//        beautifyBtn.setOnMouseReleased(event -> {
+//            if (!mouseExits.get()) {
+////                鼠标释放时,只有鼠标还没有退出按钮才可以触发操作
+////                执行反向动画
+//                translateTransition.setRate(-1);
+//                translateTransition.play();
+//                sqlComponent.beautifySQL();
+//            }
+//        });
+//
+////        鼠标退出事件
+//        beautifyBtn.setOnMouseExited(event -> {
+////            执行反向动画
+//            translateTransition.setRate(-1);
+//            translateTransition.play();
+//            mouseExits.set(false);
+//        });
 
         return beautifyBtn;
     }
@@ -212,4 +290,102 @@ public class TabQueryPane extends VBox {
         return translateTransition;
     }
 
+    @Override
+    public TabKindEnum getTabKind() {
+        return TabKindEnum.SQL_TAB;
+    }
+
+    @Override
+    public void createDynamicInfoStatusBar() {
+        dynamicInfoStatusBar = new StatusBar();
+//        不设置的话,默认有个OK字样
+        dynamicInfoStatusBar.setText("");
+        dynamicInfoStatusBar.textProperty().bind(dynamicInfoProperty);
+        addStatusBarEventListener();
+    }
+
+    @Override
+    public StatusBar getDynamicInfoStatusBar() {
+        return dynamicInfoStatusBar;
+    }
+
+    @Override
+    public void addStatusBarEventListener() {
+        addEventHandler(UserEvent.EXECUTE_SQL, event -> {
+//            去掉SQL中的换行符
+            String sql = event.getSql().replaceAll("\r|\n|\t", "");
+            log.debug("设置动态SQL信息:[{}]", sql);
+//            执行SQL时,设置动态信息栏的SQL信息,同时移除动态信息栏右侧的子项(同一个窗口多次执行的情况)
+            dynamicInfoProperty.set(sql);
+            dynamicInfoStatusBar.getRightItems().removeAll(dynamicInfoStatusBar.getRightItems());
+//            开启进度条
+            startSqlExecuteProgressTask();
+            controlButtonEnableOrDisable(false);
+        });
+
+        addEventHandler(UserEvent.EXECUTE_SQL_COMPLETE, event -> {
+            log.debug("接收到SQL执行完成事件,准备停止进度条,并设置查询记录数及查询耗时");
+//            关闭进度条
+            stopSqlExecuteProgressTask();
+            controlButtonEnableOrDisable(true);
+            Map<String, Object> queryInfo = event.getQueryInfo();
+            String cost = "查询耗时：" + TabKind.getSecondForMilliSecond(queryInfo.get("cost")) + "秒";
+            String record = "总记录数：" + queryInfo.get("count");
+            Label costLabel = TabKind.createCommonLabel(cost, dynamicInfoStatusBar, null, Color.GREEN);
+            costLabel.setPrefHeight(dynamicInfoStatusBar.getHeight());
+            Label recordLabel = TabKind.createCommonLabel(record, dynamicInfoStatusBar, null, Color.GREEN);
+            recordLabel.setPrefHeight(dynamicInfoStatusBar.getHeight());
+//            注意这里如果是set(index,node),那么如果指定索引处没有Node将会报错
+            dynamicInfoStatusBar.getRightItems().add(0, new Separator(Orientation.VERTICAL));
+            dynamicInfoStatusBar.getRightItems().add(1, costLabel);
+            dynamicInfoStatusBar.getRightItems().add(2, new Separator(Orientation.VERTICAL));
+            dynamicInfoStatusBar.getRightItems().add(3, recordLabel);
+
+        });
+
+        addEventHandler(UserEvent.EXECUTE_SQL_FAIL, event -> {
+            controlButtonEnableOrDisable(true);
+            stopSqlExecuteProgressTask();
+            ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(event.getException());
+            sqlExecuteErrDialog.setTitle("SQL执行失败");
+            sqlExecuteErrDialog.show();
+        });
+    }
+
+
+    /**
+     * 开启SQL执行进度
+     */
+    public void startSqlExecuteProgressTask() {
+        statusBarProgressTask = new StatusBarProgressTask();
+        progressTaskExecutorPool.execute(statusBarProgressTask);
+//        当StatusBar进度属性绑定到task的进度属性时,StatusBar就展示了进度条,同理当task的进度属性为100%时,StatusBar进度条将消失
+        dynamicInfoStatusBar.progressProperty().bind(statusBarProgressTask.progressProperty());
+    }
+
+    /**
+     * 停止SQL执行进度
+     */
+    public void stopSqlExecuteProgressTask() {
+        statusBarProgressTask.stopProgress();
+//        属性解绑
+        dynamicInfoStatusBar.progressProperty().unbind();
+    }
+
+    /**
+     * 控制按钮的启用与禁用,这里仅控制运行按钮和停止按钮
+     * 由于此两个按钮总是互斥关系,因此用Boolean类型判断
+     * 当参数为true,则运行按钮启用,停止按钮禁用
+     * 当参数为false,则运行按钮禁用,停止按钮启用
+     */
+    public void controlButtonEnableOrDisable(boolean flag) {
+
+        if (flag) {
+            runButton.setDisable(false);
+            stopButton.setDisable(true);
+        } else {
+            runButton.setDisable(true);
+            stopButton.setDisable(false);
+        }
+    }
 }

@@ -90,5 +90,18 @@ public class ModelJson {
         return schemaObj;
     }
 
+    /**
+     * 重建Calcite连接
+     */
+    public static void rebuildCalciteConnection(String modelJson) {
+        try {
+            SqlExecute.rebuildCalciteConnection(modelJson);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+    }
+
+
+
 
 }

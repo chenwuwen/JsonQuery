@@ -111,7 +111,8 @@ public class JsonQuery {
         for (DataBaseModel dataBaseModel : dataBaseModels) {
             schemas.add(ModelJson.buildSchema(dataBaseModel.getName(), dataBaseModel.getUrl()));
         }
-        ModelJson.buildModelJson(schemas, "");
+        String modelJson = ModelJson.buildModelJson(schemas, "");
+        ModelJson.rebuildCalciteConnection(modelJson);
     }
 
     /**

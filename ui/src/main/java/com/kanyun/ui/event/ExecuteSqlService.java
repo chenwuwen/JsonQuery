@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 异步执行SQL服务
+ */
 public class ExecuteSqlService extends Service<Pair<Map<String, Integer>, List<Map<String, Object>>>> {
 
     private static final Logger log = LoggerFactory.getLogger(ExecuteSqlService.class);
