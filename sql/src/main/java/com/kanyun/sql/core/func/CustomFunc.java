@@ -1,4 +1,4 @@
-package com.kanyun.sql.core;
+package com.kanyun.sql.core.func;
 
 /**
  * 自定义函数,SQL中可调用,现已加入外部函数

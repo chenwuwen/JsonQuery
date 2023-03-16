@@ -1,7 +1,7 @@
 package com.kanyun.sql;
 
 import com.google.common.io.Files;
-import com.kanyun.sql.core.CustomFunc;
+import com.kanyun.sql.core.func.CustomFunc;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteConnection;
