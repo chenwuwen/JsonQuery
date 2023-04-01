@@ -3,6 +3,7 @@ package com.kanyun.sql.core;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.kanyun.sql.SqlExecute;
+import org.apache.calcite.model.ModelHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +83,8 @@ public class ModelJson {
         JsonObject schemaObj = new JsonObject();
         schemaObj.addProperty("name", dataBaseName);
         schemaObj.addProperty("type", "custom");
+//        如果不想在Schema中添加表,则设置为false
+//        schemaObj.addProperty("mutable", "false");
 //        指定使用factory类
         schemaObj.addProperty("factory", "com.kanyun.sql.core.JsonSchemaFactory");
         JsonObject operand = new JsonObject();

@@ -10,7 +10,23 @@ import javafx.scene.layout.CornerRadii;
 import javafx.scene.paint.Color;
 import org.controlsfx.control.StatusBar;
 
+/**
+ * Tab种类接口
+ * 当添加新的Tab类型时,需要实现该接口
+ *
+ * 创建新子类步骤
+ * 1.子类添加 成员变量  StatusBar dynamicInfoStatusBar;
+ * 2.子类构造方法调用createDynamicInfoStatusBar()方法,并实例化 StatusBar
+ * 3.子类实现的getDynamicInfoStatusBar() 方法返回实例化好的StatusBar
+ * 4.子类实现addStatusBarEventListener() 方法
+ * 5.子类实现getTabKind()方法,返回类型{@link TabKindEnum}
+ * 6.子类构造方法,调用接口的默认方法 statusBarInit() 方法
+ *
+ *
+ */
 public interface TabKind {
+
+
 
     /**
      * 获取Tab页类型枚举
@@ -34,8 +50,15 @@ public interface TabKind {
 
     /**
      * 添加StatusBar事件监听器
+     * 监听相应的事件,来更改statusBar的显示内容
      */
     void addStatusBarEventListener();
+
+
+    default void statusBarInit() {
+        createDynamicInfoStatusBar();
+        addStatusBarEventListener();
+    }
 
     /**
      * 毫秒转化为秒,保留两位小数

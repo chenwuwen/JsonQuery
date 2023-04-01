@@ -63,7 +63,7 @@ public class TabQueryTablePane extends VBox implements TabKind {
     private SimpleStringProperty dynamicInfoProperty = new SimpleStringProperty();
 
     public TabQueryTablePane(TableModel tableModel) throws Exception {
-        log.debug("查询表页面被新建,[{}.{}] 被打开", tableModel.getDataBaseName(), tableModel.getTableName());
+        log.debug("查询表页面被新建,[{}.{}] 被打开", tableModel.getSchemaName(), tableModel.getTableName());
         try {
             executeSqlService = new ExecuteSqlService();
             createDynamicInfoStatusBar();
@@ -85,9 +85,9 @@ public class TabQueryTablePane extends VBox implements TabKind {
      * @throws SQLException
      */
     public void queryTable(TableModel tableModel) throws Exception {
-        String defaultSchema = tableModel.getDataBaseName();
+        String defaultSchema = tableModel.getSchemaName();
         String modelJson = ModelJson.getModelJson(defaultSchema);
-        String sql = "select * from " + tableModel.getDataBaseName() + "." + tableModel.getTableName();
+        String sql = "select * from " + tableModel.getSchemaName() + "." + tableModel.getTableName();
         UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
         userEvent.setSql(sql);
 //        SQL执行事件,自己发送,自己接收

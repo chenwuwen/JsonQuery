@@ -1,19 +1,16 @@
 package com.kanyun.ui.model;
 
 
-import java.util.Map;
-
 public class TableModel implements BaseModel {
 
     private DataBaseModel dataBaseModel;
 
-    private String dataBaseName;
+    private String schemaName;
 
     private String tableName;
 
     private String path;
 
-    private Map<String, String> fieldInfo;
 
     public DataBaseModel getDataBaseModel() {
         return dataBaseModel;
@@ -39,21 +36,14 @@ public class TableModel implements BaseModel {
         this.path = path;
     }
 
-    public String getDataBaseName() {
-        return dataBaseName;
+    public String getSchemaName() {
+        return schemaName;
     }
 
-    public void setDataBaseName(String dataBaseName) {
-        this.dataBaseName = dataBaseName;
+    public void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
     }
 
-    public Map<String, String> getFieldInfo() {
-        return fieldInfo;
-    }
-
-    public void setFieldInfo(Map<String, String> fieldInfo) {
-        this.fieldInfo = fieldInfo;
-    }
 
     @Override
     public String toString() {

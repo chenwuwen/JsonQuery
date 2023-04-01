@@ -2,13 +2,13 @@ package com.kanyun.sql.core;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
+import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -38,6 +38,12 @@ public class JsonSchema extends AbstractSchema {
     public JsonSchema(File directory, String schema) {
         this.directory = directory;
         this.schema = schema;
+    }
+
+    public JsonSchema(File directory, String schema, Map<String, Table> tableMap) {
+        this.directory = directory;
+        this.schema = schema;
+        this.tableMap = tableMap;
     }
 
 

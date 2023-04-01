@@ -136,7 +136,7 @@ public class TabObjectsPane extends VBox implements TabKind {
         UserEvent userEvent = new UserEvent(UserEvent.QUERY_TABLE);
         TableModel tableModel = new TableModel();
         tableModel.setTableName(tableName);
-        tableModel.setDataBaseName(dataBaseName);
+        tableModel.setSchemaName(dataBaseName);
         userEvent.setTableModel(tableModel);
         UserEventBridgeService.bridgeUserEvent2ContentPane(userEvent);
     }

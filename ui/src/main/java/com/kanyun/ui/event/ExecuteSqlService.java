@@ -38,7 +38,7 @@ public class ExecuteSqlService extends Service<Pair<Map<String, Integer>, List<M
     /**
      * 查询信息
      */
-    private Map<String, Object> queryInfo;
+    private Map queryInfo;
 
 
     public ExecuteSqlService setModelJson(String modelJson) {

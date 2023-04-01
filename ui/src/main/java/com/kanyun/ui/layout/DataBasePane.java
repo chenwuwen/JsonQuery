@@ -41,7 +41,9 @@ public class DataBasePane extends VBox {
 
     private static final Logger log = LoggerFactory.getLogger(DataBasePane.class);
 
-
+    /**
+     * 设置左侧数据库列表 数据库/表的 ICON的尺寸
+     */
     private static Integer dataBaseOrTableIconSize = 15;
 
     /**
@@ -103,7 +105,7 @@ public class DataBasePane extends VBox {
             String tableName = Files.getNameWithoutExtension(table.getName());
             TableModel tableModel = new TableModel();
             tableModel.setTableName(tableName);
-            tableModel.setDataBaseName(dataBase.getName());
+            tableModel.setSchemaName(dataBase.getName());
             tableModel.setPath(table.getPath());
             tableModel.setDataBaseModel(dataBase);
 //            创建表item

@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.kanyun.sql.core.ModelJson;
+import com.kanyun.sql.func.AbstractFuncSource;
 import com.kanyun.sql.func.FuncSourceType;
 import com.kanyun.ui.model.DataBaseModel;
 import com.kanyun.ui.model.JsonQueryConfig;
@@ -75,7 +76,7 @@ public class JsonQuery {
         jsonQueryConfig = gson.fromJson(fileReader, JsonQueryConfig.class);
         fileReader.close();
 //        加载函数配置
-//        loadFunctionConfig();
+        loadFunctionConfig();
         if (jsonQueryConfig.getDataBaseModelList() == null) {
             List<DataBaseModel> dataBaseModelList = new ArrayList<>();
 //           这里不使用 FXCollections.emptyObservableList()方法,是因为该方法返回的EmptyObservableList不支持add数据
@@ -105,6 +106,7 @@ public class JsonQuery {
 
     /**
      * 构建calcite model.json配置文件
+     * 并创建Schema,将触发JsonSchemaFactory.create()
      */
     public static void rebuildModelJson() {
         JsonArray schemas = new JsonArray();
@@ -119,13 +121,17 @@ public class JsonQuery {
      * 加载函数配置
      */
     public static void loadFunctionConfig() throws Exception {
+//        反射机制,触发类加载,执行静态代码块,获取内置函数
+        Class.forName(AbstractFuncSource.class.getName());
         if (StringUtils.isNotBlank(jsonQueryConfig.getFuncPath())) {
             String funcPath = jsonQueryConfig.getFuncPath();
-            log.info("准备加载函数:[{}]", funcPath);
-            if (FuncSourceType.valueOf(jsonQueryConfig.getFuncType()) == FuncSourceType.MAVEN) {
+            String funcType = jsonQueryConfig.getFuncType();
+            if (FuncSourceType.valueOf(funcType) == FuncSourceType.MAVEN) {
+                log.info("准备解析缓存来自Maven的函数:[{}]", funcPath);
                 String[] split = funcPath.split(":");
                 FuncSourceType.MAVEN.newInstance().loadJar(split[0], split[1], split[2]);
             } else {
+                log.info("准备解析缓存来自jar文件的函数:[{}]", funcPath);
                 FuncSourceType.FILE.newInstance().loadJar(funcPath);
             }
         }

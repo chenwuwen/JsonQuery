@@ -5,9 +5,12 @@ import com.kanyun.sql.core.ModelJson;
 import com.kanyun.sql.func.AbstractFuncSource;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.model.JsonJdbcSchema;
+import org.apache.calcite.model.JsonSchema;
+import org.apache.calcite.model.JsonTable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -38,8 +41,10 @@ public class SqlExecute {
         System.setProperty("saffron.default.nationalcharset", ConversionUtil.NATIVE_UTF16_CHARSET_NAME);
         System.setProperty("saffron.default.collation.name", ConversionUtil.NATIVE_UTF16_CHARSET_NAME + "$en_US");
         info = new Properties();
+        info.setProperty(CalciteConnectionProperty.LEX.camelName(), Lex.JAVA.name());
         info.setProperty(CalciteConnectionProperty.DEFAULT_NULL_COLLATION.camelName(), NullCollation.LAST.name());
         info.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "false");
+        info.setProperty(CalciteConnectionProperty.PARSER_FACTORY.camelName(), "org.apache.calcite.sql.parser.impl.SqlParserImpl#FACTORY");
     }
 
     /**
@@ -62,7 +67,7 @@ public class SqlExecute {
     }
 
     /**
-     * 重建Calcite连接
+     * 重建Calcite连接,将触发JsonSchemaFactory.create()方法
      */
     public static void rebuildCalciteConnection(String modelJson) throws SQLException {
         Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
@@ -80,7 +85,7 @@ public class SqlExecute {
      * @throws SQLException
      */
     public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) throws Exception {
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(2);
         buildCalciteConnection(modelJson);
 //        取出rootSchema,需要注意的是rootSchema不等于model.json中的defaultSchema,rootSchema一般是空
         SchemaPlus rootSchema = calciteConnection.getRootSchema();

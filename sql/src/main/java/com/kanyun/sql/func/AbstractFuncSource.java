@@ -61,15 +61,15 @@ public abstract class AbstractFuncSource {
      * 初始化加载内置函数
      */
     static {
-        log.info("准备初始内置函数");
+        log.info("准备解析缓存内置函数");
 //        初始化反射工具类包,内置函数在包com.kanyun.sql.core.func下,同时定义子类型扫描器,扫描指定包下的Object的子类
 //        如果要实现扫描指定类的子类则在filterResultsBy()方法中实现Predicate接口,判断参数是否与指定父类一致
         Reflections reflections = new Reflections("com.kanyun.sql.core.func", Scanners.SubTypes.filterResultsBy(c -> true));
         Set<Class<?>> classSet = reflections.getSubTypesOf(Object.class);
         for (Class<?> clazz : classSet) {
-//            判断当前class不是枚举,接口,注解,抽象类类型
+//            判断当前class不是枚举,接口,注解,抽象类等类型
             if (!clazz.isEnum() && !clazz.isInterface() && !clazz.isAnnotation()) {
-                if (Modifier.isAbstract(clazz.getModifiers())) {
+                if (!Modifier.isAbstract(clazz.getModifiers())) {
                     cacheFunc(clazz, innerDefineFunctions);
                 }
             }
@@ -115,7 +115,7 @@ public abstract class AbstractFuncSource {
      * @param clazz
      * @param container
      */
-    private static void cacheFunc(Class clazz, ConcurrentHashMap container) {
+    private static void cacheFunc(Class clazz, ConcurrentHashMap<String, Class> container) {
         Method[] methods = clazz.getMethods();
         for (Method method : methods) {
 //                得到方法修饰符
@@ -138,11 +138,11 @@ public abstract class AbstractFuncSource {
         Set<Map.Entry<String, Class>> entries = userDefineFunctions.entrySet();
         entries.addAll(innerDefineFunctions.entrySet());
         for (Map.Entry<String, Class> entry : entries) {
-            log.debug("待注册的函数信息：[{}.{}]", entry.getValue(), entry.getKey());
+            log.debug("待注册的函数信息：[{}.{}()]", entry.getValue().getName(), entry.getKey());
             try {
                 schemaPlus.add(entry.getKey(), ScalarFunctionImpl.create(entry.getValue(), entry.getKey()));
             } catch (Exception e) {
-                log.error("函数注册错误:", e);
+                log.error("函数注册异常!:", e);
             }
         }
     }

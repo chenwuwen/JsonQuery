@@ -53,7 +53,7 @@ public class ContentPane extends TabPane {
         addEventHandler(UserEvent.NEW_QUERY, event -> {
             log.debug("ContentPane 接收到新建查询事件,准备开启Tab页");
             Tab queryTab = new Tab("新的查询");
-            final TabQueryPane tabQueryPane = new TabQueryPane();
+            TabQueryPane tabQueryPane = new TabQueryPane();
             queryTab.setContent(tabQueryPane);
             getTabs().add(queryTab);
             getSelectionModel().select(queryTab);
@@ -64,7 +64,7 @@ public class ContentPane extends TabPane {
          */
         addEventHandler(UserEvent.QUERY_TABLE, event -> {
             log.debug("ContentPane 接收到数据页,先确定是哪张表,然后开启tab页");
-            String tabName = event.getTableModel().getTableName() + " @" + event.getTableModel().getDataBaseName();
+            String tabName = event.getTableModel().getTableName() + " @" + event.getTableModel().getSchemaName();
             Tab tableTab = new Tab(tabName);
             FontAwesomeIconView fontAwesomeIcon
                     = new FontAwesomeIconView(FontAwesomeIcon.TABLE);
@@ -101,7 +101,7 @@ public class ContentPane extends TabPane {
          */
         addEventHandler(UserEvent.INSPECT_TABLE, event -> {
             log.debug("ContentPane 接收到对象页,检查表");
-            String tabName = event.getTableModel().getTableName() + " @" + event.getTableModel().getDataBaseName();
+            String tabName = event.getTableModel().getTableName() + " @" + event.getTableModel().getSchemaName();
             Tab tableInspectTab = new Tab(tabName);
             try {
                 TabInspectTablePane tabInspectTablePane = new TabInspectTablePane(event.getTableModel());
@@ -133,7 +133,7 @@ public class ContentPane extends TabPane {
                 }
                 if (eventType == UserEvent.QUERY_TABLE) {
                     TableModel tableModel = event.getTableModel();
-                    String newTabName = tableModel.getTableName() + " @" + tableModel.getDataBaseName();
+                    String newTabName = tableModel.getTableName() + " @" + tableModel.getSchemaName();
 //                    查看当前Tab页是否存在,不存在继续执行,存在则切换到对应Tab页,并且消费掉事件,EventHandler不再执行
                     ObservableList<Tab> tabs = getTabs();
                     Optional<Tab> first = tabs.stream().filter(tab -> tab.getText().equals(newTabName)).findFirst();
