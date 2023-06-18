@@ -64,7 +64,7 @@ public class SqlParseHelper {
             if (where != null) {
                 if (SqlKind.LESS_THAN.equals(where.getKind())) {
                     SqlBasicCall sqlBasicCall = (SqlBasicCall) where;
-                    for (SqlNode operandNode : sqlBasicCall.operands) {
+                    for (SqlNode operandNode : sqlBasicCall.getOperandList()) {
                         if (SqlKind.LITERAL.equals(operandNode.getKind())) {
                             log.debug("where 中的操作符：{}", operandNode);
                         }
@@ -82,7 +82,7 @@ public class SqlParseHelper {
                 if (SqlKind.SUM.equals(x.getKind())) {
 //                    SqlBasicCall对比SqlSelect/SqlDelete而言，可以理解为表示的是一些基本的、简单的调用，例如聚合函数、比较函数等
                     SqlBasicCall sqlBasicCall = (SqlBasicCall) x;
-                    System.out.println(sqlBasicCall.operands[0]);
+                    System.out.println(sqlBasicCall.getOperandList().get(0));
                 }
             });
         }

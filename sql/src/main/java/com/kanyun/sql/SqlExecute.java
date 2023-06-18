@@ -64,6 +64,7 @@ public class SqlExecute {
         Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
 //       转换为Calcite连接
         calciteConnection = connection.unwrap(CalciteConnection.class);
+        registerFunc();
     }
 
     /**
@@ -73,6 +74,21 @@ public class SqlExecute {
         Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
 //       转换为Calcite连接
         calciteConnection = connection.unwrap(CalciteConnection.class);
+        registerFunc();
+    }
+
+
+    /**
+     * 注册函数,仅在创建/重建 连接时注册,直接注册到RootSchema
+     * 这里把函数注册到RootSchema是因为
+     * 在实际应用中，RootSchema是根所有schema的路径，所有注册在RootSchema上的table或者是udf/udaf都是全局的，
+     * 意思就是说可以被SubSchema直接使用，而注册在SubSchema里的table或者是udf，则在使用中必须声明是哪个SubSchema拥有的。
+     */
+    public static void registerFunc() {
+//        取出rootSchema,需要注意的是rootSchema不等于model.json中的defaultSchema,rootSchema一般是空
+        SchemaPlus rootSchema = calciteConnection.getRootSchema();
+//        注册自定义函数(Calcite中内置的函数主要在org.apache.calcite.sql.fun.SqlStdOperatorTable中,包括常见的算术运算符、时间函数等)
+        AbstractFuncSource.registerFunction(rootSchema);
     }
 
     /**
@@ -87,10 +103,6 @@ public class SqlExecute {
     public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) throws Exception {
         TimeUnit.SECONDS.sleep(2);
         buildCalciteConnection(modelJson);
-//        取出rootSchema,需要注意的是rootSchema不等于model.json中的defaultSchema,rootSchema一般是空
-        SchemaPlus rootSchema = calciteConnection.getRootSchema();
-//        注册自定义函数(Calcite中内置的函数主要在org.apache.calcite.sql.fun.SqlStdOperatorTable中,包括常见的算术运算符、时间函数等)
-        AbstractFuncSource.registerFunction(rootSchema);
 //        动态设置defaultSchema(之所以动态设置,是避免重新获取Connection,因为使用ModelJson获取Connection浪费性能)
         calciteConnection.setSchema(defaultSchema);
         if (sql.endsWith(";")) {
@@ -118,7 +130,7 @@ public class SqlExecute {
 //            这里要判断一下map中是否存在字段名称一致的情况,因为会存在两张表中存在同名字段,如果不设置别名的话,map将被覆盖
             if (columnInfos.containsKey(columnLabel)) {
 //                遇见同名的情况,修改Label为 columnLabel(table)
-                columnLabel = columnLabel +"("+resultSet.getMetaData().getTableName(i)+")" ;
+                columnLabel = columnLabel + "(" + resultSet.getMetaData().getTableName(i) + ")";
 
             }
 //            字段类型,见类 java.sql.Types
