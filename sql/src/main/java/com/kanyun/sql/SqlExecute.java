@@ -94,7 +94,7 @@ public class SqlExecute {
      * @throws SQLException
      */
     public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) throws Exception {
-        TimeUnit.SECONDS.sleep(2);
+//        TimeUnit.SECONDS.sleep(2);
         buildCalciteConnection(modelJson);
 //        动态设置defaultSchema(之所以动态设置,是避免重新获取Connection,因为使用ModelJson获取Connection浪费性能)
         calciteConnection.setSchema(defaultSchema);

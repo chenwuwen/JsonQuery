@@ -35,7 +35,18 @@ public class SplashPane extends StackPane {
 
     private static final double SCENE_WIDTH = 800;
     private static final double SCENE_HEIGHT = 400;
+    /**
+     * 动画列表
+     */
     private static final List<Animation> animationList = new ArrayList<>();
+    /**
+     * 动画执行时间
+     */
+    private static final double ANIMATION_SUSTAIN_TIME = 5;
+
+    /**
+     * Svg图像位置
+     */
     private static String svg_img_path = "classpath:/logo.svg";
 
 
@@ -90,7 +101,7 @@ public class SplashPane extends StackPane {
             Circle trackBall = new Circle(2);
             trackBall.setFill(Color.RED);
 //            动画持续时间
-            Duration seconds = Duration.seconds(8);
+            Duration seconds = Duration.seconds(ANIMATION_SUSTAIN_TIME);
             Animation pathAnimation = splashAnimation.createPathAnimation(canvas, seconds, svgPath, trackBall);
 //            pathAnimation.setOnFinished(event -> {
 //
@@ -129,6 +140,7 @@ public class SplashPane extends StackPane {
 
     /**
      * 计算canva的宽度
+     *
      * @param svgSize
      * @param svgScaleX
      * @param svgNumber
