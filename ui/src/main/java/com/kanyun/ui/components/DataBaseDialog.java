@@ -116,14 +116,49 @@ public abstract class DataBaseDialog {
         dataBaseNameField.textProperty().bindBidirectional(dataBaseNameProperty);
         dataBaseNameField.setLabelFloat(true);
         dataBaseNameField.setPromptText("数据库名称");
-        pane.getChildren().add(dataBaseNameField);
+
+        HBox dataBaseUrlRegion = new HBox();
+        JFXTextField dataBaseUrlTextField = new JFXTextField();
+//        bind()是单向绑定,bindBidirectional()是双向绑定
+        dataBaseUrlTextField.textProperty().bindBidirectional(dataBaseUrlProperty);
+        dataBaseUrlTextField.setStyle(FX_LABEL_FLOAT_TRUE);
+        dataBaseUrlTextField.setPromptText("数据库路径");
+        dataBaseUrlTextField.setDisable(true);
+        JFXButton dataBaseUrlBtn = new JFXButton("数据库路径");
+        dataBaseUrlBtn.setOnAction(event -> {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("请选择你的数据库路径");
+            File selectedDirectory = directoryChooser.showDialog(new Stage());
+            if (selectedDirectory != null && selectedDirectory.isDirectory()) {
+                dataBaseUrlTextField.setText(selectedDirectory.getPath());
+            }
+        });
+//        数据框添加验证
+        addTextFieldValidate(dataBaseNameField, dataBaseUrlTextField);
+        dataBaseUrlRegion.setSpacing(5);
+        HBox.setHgrow(dataBaseUrlTextField, Priority.ALWAYS);
+        dataBaseUrlRegion.getChildren().addAll(dataBaseUrlTextField, dataBaseUrlBtn);
+//        数据库名称添加到Pane,数据库URL(TextField+Button)添加到Pane,注意添加顺序
+        pane.getChildren().addAll(dataBaseNameField, dataBaseUrlRegion);
+
+        return pane;
+    }
+
+    /**
+     * 添加数据框验证器
+     *
+     * @param dataBaseNameField
+     * @param dataBaseUrlTextField
+     */
+    private void addTextFieldValidate(JFXTextField dataBaseNameField, JFXTextField dataBaseUrlTextField) {
+//        数据库名验证配置
         RequiredFieldValidator dataBaseNameValidator = new RequiredFieldValidator();
         dataBaseNameValidator.setMessage("数据库名称不能为空");
-
         FontAwesomeIconView fontAwesomeIconView = new FontAwesomeIconView(FontAwesomeIcon.WARNING);
         fontAwesomeIconView.setFill(Color.RED);
         dataBaseNameValidator.setIcon(fontAwesomeIconView);
         dataBaseNameField.getValidators().add(dataBaseNameValidator);
+        dataBaseNameValidator.setMessage("数据库路径不能为空");
         dataBaseNameField.focusedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -134,15 +169,9 @@ public abstract class DataBaseDialog {
                 }
             }
         });
-        HBox hBox = new HBox();
-        JFXTextField dataBaseUrlTextField = new JFXTextField();
-//        bind()是单向绑定,bindBidirectional()是双向绑定
-        dataBaseUrlTextField.textProperty().bindBidirectional(dataBaseUrlProperty);
-        dataBaseUrlTextField.setStyle(FX_LABEL_FLOAT_TRUE);
-        dataBaseUrlTextField.setPromptText("数据库路径");
-        dataBaseUrlTextField.setDisable(true);
+
+//        数据库URL验证配置
         RequiredFieldValidator dataBaseUrlValidator = new RequiredFieldValidator();
-        dataBaseNameValidator.setMessage("数据库路径不能为空");
 //          FontIcon warnIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
 //        warnIcon.getStyleClass().add(ERROR);
 //        validator.setIcon(warnIcon);
@@ -152,23 +181,6 @@ public abstract class DataBaseDialog {
                 dataBaseUrlValidator.validate();
             }
         });
-        JFXButton dataBaseUrlBtn = new JFXButton("数据库路径");
-        dataBaseUrlBtn.setOnAction(event -> {
-            DirectoryChooser directoryChooser = new DirectoryChooser();
-            directoryChooser.setTitle("请选择你的数据库路径");
-            File selectedDirectory = directoryChooser.showDialog(new Stage());
-            if (selectedDirectory != null && selectedDirectory.isDirectory()) {
-                dataBaseUrlTextField.setText(selectedDirectory.getPath());
-            }
-        });
-        hBox.setSpacing(5);
-        HBox.setHgrow(dataBaseUrlTextField, Priority.ALWAYS);
-        hBox.getChildren().addAll(dataBaseUrlTextField, dataBaseUrlBtn);
-
-        pane.getChildren().add(hBox);
-
-
-        return pane;
     }
 
 }

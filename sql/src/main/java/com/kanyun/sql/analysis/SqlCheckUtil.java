@@ -1,4 +1,4 @@
-package com.kanyun.sql;
+package com.kanyun.sql.analysis;
 
 /**
  * 用于对待执行的SQL进行检测,并将优化后的SQL传递给引擎执行。
@@ -8,5 +8,5 @@ package com.kanyun.sql;
  * 常见的优化：
  * 1.自动添加AS
  */
-public class SqlCheckUtil {
+public  class SqlCheckUtil {
 }

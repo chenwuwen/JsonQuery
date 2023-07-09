@@ -24,8 +24,14 @@ public class CalciteJsonTest {
     static Properties info;
     static CalciteConnection calciteConnection;
 
+    /**
+     * @BeforeClass: 方法必须必须要是静态方法（static 声明），所有测试开始之前运行
+     * 注意区分before，是所有测试方法
+     * 那么如何一次测试多个方法、或者多个测试类呢？为了解决这个问题，引入了测试套件(TestSuite)通过将多个测试放入套件中，一并执行多个测试。
+     * https://blog.csdn.net/qqqqq1993qqqqq/article/details/73611575
+     */
     @BeforeClass
-    public void beforeClass() {
+    public static void beforeClass() {
 //        System.setProperty("saffron.default.charset", "UTF-8");
         System.setProperty("saffron.default.charset", ConversionUtil.NATIVE_UTF16_CHARSET_NAME);
         System.setProperty("saffron.default.nationalcharset", ConversionUtil.NATIVE_UTF16_CHARSET_NAME);
@@ -35,6 +41,16 @@ public class CalciteJsonTest {
         info.setProperty(CalciteConnectionProperty.DEFAULT_NULL_COLLATION.camelName(), NullCollation.LAST.name());
         info.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "false");
     }
+
+    /**
+     * @AfterClass: 方法必须要是静态方法（static 声明），所有测试结束之后运行
+     * 注意区分 @After
+     */
+    public static void afterClass() {
+
+    }
+
+
 
     @Before
     public void before() {
@@ -51,7 +67,7 @@ public class CalciteJsonTest {
     }
 
     @Test
-    public void jsonTable() throws SQLException {
+    public void testJsonTable() throws SQLException {
         SchemaPlus rootSchema = calciteConnection.getRootSchema();
 //        Calcite中内置的函数主要在SqlStdOperatorTable
 //        注册自定义函数
@@ -67,7 +83,7 @@ public class CalciteJsonTest {
     }
 
     /**
-     * 得到Calcite的配置信息
+     * 从文件中得到Calcite的配置信息
      *
      * @param fileName
      * @return

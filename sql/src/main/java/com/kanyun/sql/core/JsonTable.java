@@ -51,7 +51,7 @@ public class JsonTable extends AbstractTable implements ScannableTable {
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-//        解析Json文件,获取字段信息
+//        解析Json文件,获取字段信息(字段名和类型)
         List<JsonTableColumn> tableColumnInfoList = JsonTableColumnFactory.getTableColumnInfoList(file, schema, tableName);
         List<String> fieldNames = new ArrayList<>();
         List<RelDataType> fieldTypes = new ArrayList<>();
@@ -62,7 +62,7 @@ public class JsonTable extends AbstractTable implements ScannableTable {
             if (jsonTableColumn.getType() == ColumnType.UNKNOWN) {
                 sqlType = typeFactory.createUnknownType();
             } else {
-                sqlType = typeFactory.createSqlType(SqlTypeName.get(jsonTableColumn.getName()));
+                sqlType = typeFactory.createSqlType(SqlTypeName.get(jsonTableColumn.getType().name()));
             }
             log.debug("[{}.{}]的字段:{} 类型创建完毕", schema, tableName, jsonTableColumn.getName());
             fieldTypes.add(sqlType);

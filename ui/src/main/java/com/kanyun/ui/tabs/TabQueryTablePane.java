@@ -1,13 +1,10 @@
 package com.kanyun.ui.tabs;
 
-import com.kanyun.sql.QueryInfoHolder;
-import com.kanyun.sql.SqlExecute;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.components.TableViewPane;
 import com.kanyun.ui.event.ExecuteSqlService;
 import com.kanyun.ui.event.StatusBarProgressTask;
 import com.kanyun.ui.event.UserEvent;
-import com.kanyun.ui.event.UserEventBridgeService;
 import com.kanyun.ui.model.TableModel;
 import com.sun.javafx.event.EventUtil;
 import javafx.beans.property.SimpleStringProperty;

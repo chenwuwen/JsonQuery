@@ -49,6 +49,11 @@
             <groupId>org.apache.calcite</groupId>
             <artifactId>calcite-server</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-csv</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!--maven下载依赖相关-->
         <dependency>

@@ -1,20 +1,13 @@
 package com.kanyun.sql;
 
+import com.kanyun.sql.analysis.SqlAnalyzerFactory;
 import com.kanyun.sql.core.ColumnValueConvert;
-import com.kanyun.sql.core.ModelJson;
 import com.kanyun.sql.func.AbstractFuncSource;
-import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteConnection;
-import org.apache.calcite.model.JsonJdbcSchema;
-import org.apache.calcite.model.JsonSchema;
-import org.apache.calcite.model.JsonTable;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ConversionUtil;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -112,8 +105,10 @@ public class SqlExecute {
         Statement statement = calciteConnection.createStatement();
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        log.info("准备执行SQL：[{}]", sql);
+        log.info("执行SQL分析链,原始SQL:[{}]", sql);
 //        SqlParseHelper.getKind(sql);
+        sql = SqlAnalyzerFactory.analysisSql(sql);
+        log.info("准备执行分析后的SQL：[{}]", sql);
 //        执行SQL脚本
         ResultSet resultSet = statement.executeQuery(sql);
         stopWatch.stop();

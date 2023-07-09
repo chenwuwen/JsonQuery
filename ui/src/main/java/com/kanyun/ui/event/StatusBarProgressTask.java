@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
  * StatusBar才认为是完成,而非执行Task的done()方法
  */
 public class StatusBarProgressTask extends Task<Void> {
-    private static final Logger log = LoggerFactory.getLogger(TabQueryPane.class);
+    private static final Logger log = LoggerFactory.getLogger(StatusBarProgressTask.class);
 
 
     @Override

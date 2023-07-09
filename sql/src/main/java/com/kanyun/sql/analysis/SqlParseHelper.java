@@ -1,4 +1,4 @@
-package com.kanyun.sql;
+package com.kanyun.sql.analysis;
 
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.sql.*;

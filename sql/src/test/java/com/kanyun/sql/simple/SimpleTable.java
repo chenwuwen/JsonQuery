@@ -2,32 +2,43 @@ package com.kanyun.sql.simple;
 
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.file.CsvEnumerator;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.rel.type.RelRecordType;
 import org.apache.calcite.rel.type.StructKind;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Source;
+import org.apache.calcite.util.Sources;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SimpleTable extends AbstractTable implements ScannableTable {
 
     private final String tableName;
+    private final String filePath;
     private final List<String> fieldNames;
     private final List<SqlTypeName> fieldTypes;
     private final SimpleTableStatistic statistic;
 
     private RelDataType rowType;
 
-    private SimpleTable(String tableName, List<String> fieldNames, List<SqlTypeName> fieldTypes, SimpleTableStatistic statistic) {
+    private SimpleTable(String tableName, String filePath, List<String> fieldNames, List<SqlTypeName> fieldTypes, SimpleTableStatistic statistic) {
         this.tableName = tableName;
+        this.filePath = filePath;
         this.fieldNames = fieldNames;
         this.fieldTypes = fieldTypes;
         this.statistic = statistic;
@@ -61,7 +72,26 @@ public class SimpleTable extends AbstractTable implements ScannableTable {
 
     @Override
     public Enumerable<Object[]> scan(DataContext root) {
-        throw new UnsupportedOperationException("Not implemented");
+        File file = new File(filePath);
+        Source source = Sources.of(file);
+        AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
+        List<RelDataType> fieldTypes = getCsvFieldType(root.getTypeFactory());
+        List<Integer> fields = ImmutableIntList.identity(fieldTypes.size());
+        return new AbstractEnumerable<Object[]>() {
+            public Enumerator<Object[]> enumerator() {
+                return new CsvEnumerator<>(source, cancelFlag, false, null,
+                        CsvEnumerator.arrayConverter(fieldTypes, fields, false));
+            }
+        };
+
+    }
+
+    private List<RelDataType> getCsvFieldType(RelDataTypeFactory typeFactory) {
+        List<RelDataType> csvFieldTypes = new ArrayList<>(fieldTypes.size());
+        for (SqlTypeName sqlTypeName : fieldTypes) {
+            csvFieldTypes.add(typeFactory.createSqlType(sqlTypeName));
+        }
+        return csvFieldTypes;
     }
 
     public static Builder newBuilder(String tableName) {
@@ -71,6 +101,7 @@ public class SimpleTable extends AbstractTable implements ScannableTable {
     public static final class Builder {
 
         private final String tableName;
+        private String filePath;
         private final List<String> fieldNames = new ArrayList<>();
         private final List<SqlTypeName> fieldTypes = new ArrayList<>();
         private long rowCount;
@@ -98,6 +129,11 @@ public class SimpleTable extends AbstractTable implements ScannableTable {
             return this;
         }
 
+        public Builder withFilePath(String filePath) {
+            this.filePath = filePath;
+            return this;
+        }
+
         public Builder withRowCount(long rowCount) {
             this.rowCount = rowCount;
 
@@ -113,7 +149,7 @@ public class SimpleTable extends AbstractTable implements ScannableTable {
                 throw new IllegalStateException("Table must have positive row count");
             }
 
-            return new SimpleTable(tableName, fieldNames, fieldTypes, new SimpleTableStatistic(rowCount));
+            return new SimpleTable(tableName, filePath, fieldNames, fieldTypes, new SimpleTableStatistic(rowCount));
         }
     }
 }

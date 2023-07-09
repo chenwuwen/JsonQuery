@@ -48,8 +48,11 @@ public class SqlValidateTest {
         calciteConnection = connection.unwrap(CalciteConnection.class);
     }
 
+    /**
+     * 测试自定义的表
+     */
     @Test
-    public void simpleTableTest() {
+    public void testSimpleTableTest() {
         SimpleTable userTable = SimpleTable.newBuilder("users")
                 .addField("id", SqlTypeName.VARCHAR)
                 .addField("name", SqlTypeName.VARCHAR)
@@ -76,9 +79,12 @@ public class SqlValidateTest {
 //        System.out.println("=========");
     }
 
+    /**
+     * 测试calcite添加Mysql数据库
+     * @throws SQLException
+     */
     @Test
-    public void jdbcSchema(String[] args) throws SQLException {
-
+    public void testJdbcSchema() throws SQLException {
         try {
 //            创建JdbcSchema(数据源)
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -101,10 +107,11 @@ public class SqlValidateTest {
                     .parserConfig(SqlParser.config().withCaseSensitive(false))
 //                    设置默认的Schema,由于参数传递的是RootSchema,因此SQL语句需要添加schema名
                     .defaultSchema(schemaPlus).build());
-//            解析sql
+//            1:解析sql SQL string --> SqlNode
             SqlNode parse = planner.parse(sql);
-//            验证sql
+//            2:验证sql   SqlNode --> SqlNode
             planner.validate(parse);
+//            3:AST转换为关系代数 SqlNode --> RelNode
             RelRoot relRoot = planner.rel(parse);
             List<RelDataTypeField> fieldList = relRoot.project().getRowType().getFieldList();
             RelMetadataQuery metadataQuery = relRoot.project().getCluster().getMetadataQuery();
