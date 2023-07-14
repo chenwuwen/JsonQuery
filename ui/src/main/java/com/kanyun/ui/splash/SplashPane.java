@@ -42,7 +42,7 @@ public class SplashPane extends StackPane {
     /**
      * 动画执行时间
      */
-    private static final double ANIMATION_SUSTAIN_TIME = 5;
+    private static final double ANIMATION_SUSTAIN_TIME = 2;
 
     /**
      * Svg图像位置
@@ -58,7 +58,7 @@ public class SplashPane extends StackPane {
 
         Pair<Double, Double> svgSize = SvgAnalysisHelper.getSvgSize(svg_img_path);
         initAnimation(paths, svgSize);
-//        有几个动画就设置几个
+//        有几个动画就设置几个计数器
         Constant.SCENE_SWITCH_FLAG = new CountDownLatch(animationList.size());
     }
 

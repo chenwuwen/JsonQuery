@@ -4,6 +4,7 @@ import com.kanyun.ui.splash.SplashPane;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +21,8 @@ public class JsonQueryApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-//        去掉最大化,最小化,关闭 按钮
-//        primaryStage.initStyle(StageStyle.TRANSPARENT);
+//        去掉最大化,最小化,关闭 按钮 不显示标题栏
+        primaryStage.initStyle(StageStyle.TRANSPARENT);
         primaryStage.setOnShowing(event -> {
 //            todo 窗口显示监听器数据初始化
         });

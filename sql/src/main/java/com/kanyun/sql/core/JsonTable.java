@@ -75,7 +75,7 @@ public class JsonTable extends AbstractTable implements ScannableTable {
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new JsonEnumerator(file);
+                return new JsonEnumerator(file, schema, tableName);
             }
         };
     }

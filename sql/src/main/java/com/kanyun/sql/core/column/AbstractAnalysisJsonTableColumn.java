@@ -1,12 +1,17 @@
 package com.kanyun.sql.core.column;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.kanyun.sql.util.NumberTypeHelper;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 解析Json文件获取表字段及表字段类型抽象类
@@ -69,7 +74,7 @@ public abstract class AbstractAnalysisJsonTableColumn {
      * @param number
      * @param jsonTableColumn
      */
-    protected void analysisColumnTypeForNumber(Number number, JsonTableColumn jsonTableColumn) {
+    protected static void analysisColumnTypeForNumber(Number number, JsonTableColumn jsonTableColumn) {
 //       判断Number类型的值的具体类型,这里要注意的是,判断的类型范围要从精确到宽泛
         if (NumberTypeHelper.isInteger(number)) {
             jsonTableColumn.setType(ColumnType.INTEGER);
@@ -101,5 +106,51 @@ public abstract class AbstractAnalysisJsonTableColumn {
         String msg = String.format("Schema: %s , Table: %s , Json文件:{} 不符合标准,不能解析出字段和字段类型", schemaName, tableName, file.getName());
         log.error(msg);
         throw new Exception(msg);
+    }
+
+    /**
+     * 分析Json元素(Json数组中的一个元素)
+     * @param jsonObject
+     * @return
+     */
+    public static List<JsonTableColumn> analysisJsonItem(JsonObject jsonObject) {
+        List<JsonTableColumn> jsonTableColumnList = new ArrayList<>();
+        for (Map.Entry<String, JsonElement> rowData : jsonObject.entrySet()) {
+            JsonTableColumn jsonTableColumn = new JsonTableColumn();
+            String column = rowData.getKey();
+            jsonTableColumn.setName(column);
+            JsonElement columnData = rowData.getValue();
+//            判断Json对象key对应的值类型是否是基本类型
+            if (columnData.isJsonPrimitive()) {
+                JsonPrimitive columnValue = columnData.getAsJsonPrimitive();
+                if (columnValue.isBoolean()) {
+                    jsonTableColumn.setType(ColumnType.BOOLEAN);
+                } else if (columnValue.isString()) {
+                    jsonTableColumn.setType(ColumnType.VARCHAR);
+                } else if (columnValue.isNumber()) {
+                    Number number = columnValue.getAsNumber();
+                    analysisColumnTypeForNumber(number, jsonTableColumn);
+                } else {
+//                    找不到对应类型就创建未知类型
+                    jsonTableColumn.setType(ColumnType.UNKNOWN);
+                    log.warn("构建表的字段类型,字段:[{}],未找到符合的类型,取值可能为空或则报错", column);
+                }
+            } else {
+                if (columnData.isJsonObject() || columnData.isJsonArray()) {
+                    jsonTableColumn.setType(ColumnType.VARCHAR);
+                } else if (columnData.isJsonNull()) {
+                    jsonTableColumn.setType(ColumnType.VARCHAR);
+                } else {
+                    log.warn("解析字段类型,字段：{} ,值：{},非基本字段类型,也不是Json类型", column, columnData);
+//                如果不是基本类型的值,也可以考虑使用typeFactory.createJavaType() 创建自己的类型,注意观察与typeFactory.createSqlType()的区别
+//                if (columnData.isJsonObject() || columnData.isJsonArray()) {
+//                    realTypes.add(typeFactory.createJavaType(String.class));
+//                    continue;
+//                }
+                }
+            }
+            jsonTableColumnList.add(jsonTableColumn);
+        }
+        return jsonTableColumnList;
     }
 }

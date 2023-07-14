@@ -45,10 +45,20 @@ public abstract class DataBaseDialog {
      * 数据库地址属性
      */
     private SimpleStringProperty dataBaseUrlProperty = new SimpleStringProperty();
+    /**
+     * 数据库名称输入框
+     */
+    private JFXTextField dataBaseNameField = new JFXTextField();
+    /**
+     * 数据库地址输入框
+     */
+    private JFXTextField dataBaseUrlTextField = new JFXTextField();
+
 
     public DataBaseDialog(String title) {
         this.title = title;
     }
+
 
     /**
      * 设置Property的值
@@ -81,12 +91,16 @@ public abstract class DataBaseDialog {
         applyButton.setButtonType(JFXButton.ButtonType.RAISED);
         JFXButton closeButton = new JFXButton("关闭");
         closeButton.setButtonType(JFXButton.ButtonType.RAISED);
-//        closeButton.getStyleClass().add("dialog-accept");
+        closeButton.getStyleClass().add("dialog-accept");
         closeButton.setOnAction(event -> alert.hideWithAnimation());
         applyButton.setOnAction(event -> {
             log.info("[{}] 点击应用按钮,内容:[{}=={}]", title, dataBaseNameProperty.get(), dataBaseUrlProperty.get());
-//            应用按钮点击时,调用抽象方法
-            apply(dataBaseNameProperty.get(), dataBaseUrlProperty.get());
+            if (dataBaseNameField.validate() && dataBaseUrlTextField.validate()) {
+//                应用按钮点击时,调用抽象方法,由子类实现
+                apply(dataBaseNameProperty.get(), dataBaseUrlProperty.get());
+                alert.close();
+            }
+
         });
         layout.setActions(closeButton, applyButton);
         alert.setContent(layout);
@@ -108,17 +122,16 @@ public abstract class DataBaseDialog {
      * @return
      */
     private Node createDataBaseDialogContent() {
-        VBox pane = new VBox();
-        pane.setSpacing(20);
-        pane.setStyle("-fx-background-color:WHITE;-fx-padding:10;");
-        JFXTextField dataBaseNameField = new JFXTextField();
+        VBox content = new VBox();
+        content.setSpacing(20);
+        content.setStyle("-fx-background-color:WHITE;-fx-padding:10;");
 //        bind()是单向绑定,bindBidirectional()是双向绑定
         dataBaseNameField.textProperty().bindBidirectional(dataBaseNameProperty);
         dataBaseNameField.setLabelFloat(true);
         dataBaseNameField.setPromptText("数据库名称");
 
         HBox dataBaseUrlRegion = new HBox();
-        JFXTextField dataBaseUrlTextField = new JFXTextField();
+
 //        bind()是单向绑定,bindBidirectional()是双向绑定
         dataBaseUrlTextField.textProperty().bindBidirectional(dataBaseUrlProperty);
         dataBaseUrlTextField.setStyle(FX_LABEL_FLOAT_TRUE);
@@ -134,35 +147,29 @@ public abstract class DataBaseDialog {
             }
         });
 //        数据框添加验证
-        addTextFieldValidate(dataBaseNameField, dataBaseUrlTextField);
+        addTextFieldValidate();
         dataBaseUrlRegion.setSpacing(5);
         HBox.setHgrow(dataBaseUrlTextField, Priority.ALWAYS);
         dataBaseUrlRegion.getChildren().addAll(dataBaseUrlTextField, dataBaseUrlBtn);
 //        数据库名称添加到Pane,数据库URL(TextField+Button)添加到Pane,注意添加顺序
-        pane.getChildren().addAll(dataBaseNameField, dataBaseUrlRegion);
+        content.getChildren().addAll(dataBaseNameField, dataBaseUrlRegion);
 
-        return pane;
+        return content;
     }
 
     /**
      * 添加数据框验证器
      *
-     * @param dataBaseNameField
-     * @param dataBaseUrlTextField
      */
-    private void addTextFieldValidate(JFXTextField dataBaseNameField, JFXTextField dataBaseUrlTextField) {
+    private void addTextFieldValidate() {
 //        数据库名验证配置
-        RequiredFieldValidator dataBaseNameValidator = new RequiredFieldValidator();
-        dataBaseNameValidator.setMessage("数据库名称不能为空");
-        FontAwesomeIconView fontAwesomeIconView = new FontAwesomeIconView(FontAwesomeIcon.WARNING);
-        fontAwesomeIconView.setFill(Color.RED);
-        dataBaseNameValidator.setIcon(fontAwesomeIconView);
-        dataBaseNameField.getValidators().add(dataBaseNameValidator);
-        dataBaseNameValidator.setMessage("数据库路径不能为空");
+        RequiredFieldValidator dataBaseNameValidator = new RequiredFieldValidator("数据库名称不能为空");
+        dataBaseNameField.setValidators(dataBaseNameValidator);
         dataBaseNameField.focusedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-//                observable是Property对象
+//                observable是Property对象,即当前的focus状态,newValue为false表示失去焦点
+                log.debug("数据库名称输入框焦点状态,新值:{} 旧值:{}",newValue,oldValue);
                 if (!newValue) {
 //                    不满足验证规则
                     dataBaseNameValidator.validate();
@@ -171,11 +178,8 @@ public abstract class DataBaseDialog {
         });
 
 //        数据库URL验证配置
-        RequiredFieldValidator dataBaseUrlValidator = new RequiredFieldValidator();
-//          FontIcon warnIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
-//        warnIcon.getStyleClass().add(ERROR);
-//        validator.setIcon(warnIcon);
-        dataBaseUrlTextField.getValidators().add(dataBaseUrlValidator);
+        RequiredFieldValidator dataBaseUrlValidator = new RequiredFieldValidator("数据库路径不能为空");
+        dataBaseUrlTextField.setValidators(dataBaseUrlValidator);
         dataBaseUrlTextField.focusedProperty().addListener((o, oldVal, newVal) -> {
             if (!newVal) {
                 dataBaseUrlValidator.validate();

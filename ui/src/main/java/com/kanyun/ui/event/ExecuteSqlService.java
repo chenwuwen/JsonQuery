@@ -81,5 +81,16 @@ public class ExecuteSqlService extends Service<Pair<Map<String, Integer>, List<M
         log.debug("succeeded()是否是JavaFX Application Thread: [{}]", Platform.isFxApplicationThread());
     }
 
-
+    /**
+     * 重写该方法很重要
+     * 在测试时发现,如果Json文件异常
+     * 如：json内容每个对象的元素数量不一致
+     * 或解析出的json字段类型不正确将导致SQL执行失败
+     * 且抛出的异常会被吞掉,重写该方法将打出异常日志
+     */
+    @Override
+    protected void failed() {
+        super.failed();
+        log.error("异步SQL执行任务异常:", super.getException());
+    }
 }

@@ -1,6 +1,7 @@
 package com.kanyun.ui;
 
 import com.jfoenix.assets.JFoenixResources;
+import com.jfoenix.svg.SVGGlyphLoader;
 import com.kanyun.ui.model.Constant;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -35,6 +36,11 @@ public class AsyncInitializer implements Runnable {
 //            初始化应用配置
             jsonQuery.initConfig();
             Scene mainScene = InterfaceInitializer.initializeMainScene();
+//            使用JFoenix SVG Loader 加载字体,使用SVGGlyph前需要先加载字体,有提供加载的多个方法,主要作用是向SVGGlyphLoader类的glyphsMap变量赋值
+//            参数1:svg字体输入流 参数2:图标名称前缀(当加载多个字体,且多个字体存在一个同名的图标,因此添加前缀加以区分,取字体时使用SVGGlyphLoader.getGlyph("前缀"+"名称"))
+            SVGGlyphLoader.loadGlyphsFont(this.getClass().getResourceAsStream("/fonts/icomoon.svg"),
+                    "icomoon");
+            log.debug("字体加载完毕:{}", SVGGlyphLoader.getAllGlyphsIDs());
 //            阻塞,需要等待动画播放完毕再切换场景
             Constant.SCENE_SWITCH_FLAG.await();
             log.info("过渡页动画播放完毕,准备切换到主场景");
@@ -54,6 +60,7 @@ public class AsyncInitializer implements Runnable {
      * 同样可以实现异步功能的还有 javafx.concurrent.Service/javafx.concurrent.Task
      * 它们主要是异步执行耗时任务,然后同步监听状态并更新UI
      * https://blog.csdn.net/baidu_25117757/article/details/117381419
+     *
      * @param mainScene 主Scene
      */
     private void switchScene(Scene mainScene) {
@@ -67,7 +74,7 @@ public class AsyncInitializer implements Runnable {
 //        splashStage.centerOnScreen();
         Stage mainStage = new Stage();
         mainStage.setTitle(splashStage.getTitle());
-        mainScene.getStylesheets().addAll("css/button.css", "css/components.css");
+        mainScene.getStylesheets().addAll("css/button.css", "css/components.css", "css/context-menu.css");
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-design.css").toExternalForm());
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-fonts.css").toExternalForm());
 //        场景设置到窗口区域

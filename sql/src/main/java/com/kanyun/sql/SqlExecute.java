@@ -102,7 +102,9 @@ public class SqlExecute {
 //            去掉sql中最后的分号
             sql = sql.substring(0, sql.length() - 1);
         }
-        Statement statement = calciteConnection.createStatement();
+//        创建Statement,作用于创建出来的ResultSet
+//        第一个参数:允许在列表中向前或向后移动，甚至可以进行特定定位 第二个参数:指定不可以更新 ResultSet(缺省值)
+        Statement statement = calciteConnection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_READ_ONLY);
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         log.info("执行SQL分析链,原始SQL:[{}]", sql);
@@ -115,7 +117,7 @@ public class SqlExecute {
         QueryInfoHolder.setQueryCost(stopWatch.getTime(TimeUnit.MILLISECONDS));
         QueryInfoHolder.setRecordCount(resultSet.getFetchSize());
         log.info("SQL执行用时：[{}毫秒] ", stopWatch.getTime(TimeUnit.MILLISECONDS));
-//        得到执行结果,取出元数据信息,并得到字段数量
+//        得到执行结果,取出元数据信息,并得到字段数量(这里取出的字段数量,仅仅只是ResultSet第一行的字段数量,并不准确)
         int columnCount = resultSet.getMetaData().getColumnCount();
         Map<String, Integer> columnInfos = new HashMap();
 //        注意 resultSet的get()方法,要从1开始,而不是0

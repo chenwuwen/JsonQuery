@@ -122,8 +122,11 @@ public class DataBasePane extends VBox {
     }
 
     /**
-     * 得到数据库(给定的URL)下的表(json文件)
-     *
+     * 得到数据库(给定的URL)下的表
+     * 对表的要求是：
+     * 1.文件后缀为.json
+     * 2.文件编码格式为UTF-8(重要,否则反序列化Json可能失败)
+     * 不过这里暂时不对第二种要求做处理,当解析Json文件反序列化失败时,抛出异常,手动处理编码问题
      * @param parentPath
      * @return
      */
@@ -181,7 +184,7 @@ public class DataBasePane extends VBox {
      *
      * @param selectedItem
      */
-    public void updDataBase(TreeItem<BaseModel> selectedItem) {
+    public void editDataBase(TreeItem<BaseModel> selectedItem) {
 //        得到待编辑的数据库
         DataBaseModel currentDataBaseModel = (DataBaseModel) selectedItem.getValue();
         DataBaseDialog dataBaseDialog = new DataBaseDialog("编辑数据库") {
@@ -294,7 +297,7 @@ public class DataBasePane extends VBox {
             });
 //            点击了修改数据库
             updDatabaseItem.setOnAction(e -> {
-                updDataBase(selectedItem);
+                editDataBase(selectedItem);
             });
 //            点击了刷新数据库
             refreshDatabaseItem.setOnAction(e -> {

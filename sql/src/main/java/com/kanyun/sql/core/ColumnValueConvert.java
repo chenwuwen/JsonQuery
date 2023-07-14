@@ -1,9 +1,11 @@
 package com.kanyun.sql.core;
 
+import org.apache.calcite.jdbc.CalciteResultSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Ref;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -77,6 +79,8 @@ public class ColumnValueConvert {
     public Map<String, Object> extractRowData(ResultSet rs) throws Exception {
         HashMap<String, Object> rowData = new HashMap<>();
         for (Map.Entry<String, Pair<Class, GetColumnValueFunction>> entry : convertColumnInfos.entrySet()) {
+//            AS后定义的别名
+//            Ref alias = rs.getRef(entry.getKey());
 //            取到元组的右值,是一个GetColumnValueFunction类型
             GetColumnValueFunction<ResultSet, Object> func = entry.getValue().getRight();
 //            调用GetColumnValueFunction的apply方法,取出字段对应的值

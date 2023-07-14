@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.kanyun.sql.core.ModelJson;
+import com.kanyun.sql.core.column.JsonTableColumnFactory;
 import com.kanyun.sql.func.AbstractFuncSource;
 import com.kanyun.sql.func.FuncSourceType;
 import com.kanyun.ui.model.DataBaseModel;
@@ -85,6 +86,7 @@ public class JsonQuery {
             dataBaseModels = FXCollections.observableList(jsonQueryConfig.getDataBaseModelList());
         }
         rebuildModelJson();
+        JsonTableColumnFactory.loadTableColumnInfo();
     }
 
     /**

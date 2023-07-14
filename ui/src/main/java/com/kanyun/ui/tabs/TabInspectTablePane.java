@@ -1,28 +1,37 @@
 package com.kanyun.ui.tabs;
 
+import com.jfoenix.controls.JFXButton;
+import com.jfoenix.svg.SVGGlyph;
+import com.jfoenix.svg.SVGGlyphLoader;
 import com.kanyun.sql.core.column.ColumnType;
 import com.kanyun.sql.core.column.JsonTableColumn;
 import com.kanyun.sql.core.column.JsonTableColumnFactory;
+import com.kanyun.ui.components.TableColumnActionBar;
+import com.kanyun.ui.model.TableMetaData;
 import com.kanyun.ui.model.TableModel;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.control.Button;
+import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.control.Separator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import org.apache.commons.lang3.StringUtils;
 import org.controlsfx.control.StatusBar;
-import org.controlsfx.control.spreadsheet.*;
+import org.controlsfx.control.tableview2.TableColumn2;
+import org.controlsfx.control.tableview2.TableView2;
+import org.controlsfx.control.tableview2.cell.ComboBox2TableCell;
+import org.controlsfx.control.tableview2.cell.TextField2TableCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -31,7 +40,6 @@ import java.util.stream.Collectors;
 public class TabInspectTablePane extends VBox implements TabKind {
 
     private static final Logger log = LoggerFactory.getLogger(TabInspectTablePane.class);
-
 
     /**
      * 动态信息栏
@@ -43,12 +51,17 @@ public class TabInspectTablePane extends VBox implements TabKind {
      */
     private SimpleStringProperty dynamicInfoProperty = new SimpleStringProperty();
 
+    /**
+     * 表字段信息Table
+     */
+    private TableView2<TableMetaData> metaInfoTableView;
+
+
     public TabInspectTablePane(TableModel tableModel) throws Exception {
         log.debug("检查表页面被新建,[{}.{}] 被打开", tableModel.getSchemaName(), tableModel.getTableName());
-        HBox toolBar = new HBox();
-        initToolBar(toolBar);
         TabPane tabPane = new TabPane();
         Tab fieldTab = createFieldTab(tableModel);
+        TableColumnActionBar toolBar = new TableColumnActionBar(metaInfoTableView,tableModel.getSchemaName(), tableModel.getTableName());
         tabPane.getTabs().add(fieldTab);
         statusBarInit();
         getChildren().addAll(toolBar, tabPane);
@@ -60,44 +73,48 @@ public class TabInspectTablePane extends VBox implements TabKind {
     public Tab createFieldTab(TableModel tableModel) {
         Tab fieldTab = new Tab("字段");
         fieldTab.setClosable(false);
-        SpreadsheetView spreadsheetView = new SpreadsheetView();
-//        表字段类型集合
-        List<String> columnsTypes = Arrays.stream(ColumnType.values()).map(x -> x.toCode()).collect(Collectors.toList());
-//        显示列头(列标题)
-        spreadsheetView.setShowColumnHeader(true);
-//        显示行头(行序号)
-        spreadsheetView.setShowRowHeader(true);
-        ObservableList<ObservableList<SpreadsheetCell>> fieldRows = FXCollections.observableArrayList();
-//        JsonTableColumnFactory是sql模块下的类,它将从缓存中拿到表的字段信息,如果缓存中没有,则从数据库获取,如果数据库中没有,则解析表对应的json文件.
+
+        metaInfoTableView = new TableView2<>();
+//        显示行头
+        metaInfoTableView.rowHeaderVisibleProperty().set(true);
+//        显示表头按钮
+        metaInfoTableView.tableMenuButtonVisibleProperty().set(true);
+//        设置是否多选(默认单选)
+        metaInfoTableView.getSelectionModel().selectionModeProperty().setValue(SelectionMode.SINGLE);
+//        表格允许编辑(如需修改Cell的值,1:需要配合column.setEditable(true)使用,2:column需要设置cellFactory)
+        metaInfoTableView.editableProperty().set(true);
+
+        final TableColumn2<TableMetaData, String> columnNameField = new TableColumn2<>("名称");
+        final TableColumn2<TableMetaData, String> columnTypeField = new TableColumn2<>("类型");
+
+        columnNameField.setCellValueFactory(meta -> meta.getValue().columnNameProperty());
+//        由于未设置该列的cellFactory属性,因此即使该列设置为允许编辑,也无法进行编辑
+        columnNameField.setEditable(true);
+        columnNameField.setCellFactory(TextField2TableCell.forTableColumn());
+        columnNameField.setPrefWidth(200);
+
+        columnTypeField.setCellValueFactory(meta -> meta.getValue().columnTypeProperty());
+//        设置此列单元格格式为下拉框
+        columnTypeField.setCellFactory(ComboBox2TableCell.forTableColumn(ColumnType.codes()));
+//        设置列可编辑
+        columnTypeField.setEditable(true);
+        columnTypeField.setPrefWidth(150);
+
+        metaInfoTableView.getColumns().setAll(columnNameField, columnTypeField);
+
         List<JsonTableColumn> tableColumnInfoList = JsonTableColumnFactory.getTableColumnInfoList(new File(tableModel.getPath()), tableModel.getSchemaName(), tableModel.getTableName());
-        GridBase grid = new GridBase(tableColumnInfoList.size(), 2);
+        List<TableMetaData> collect = tableColumnInfoList.stream().map(jsonTableColumn -> {
+            return TableMetaData.newBuilder(tableModel.getSchemaName(), tableModel.getTableName())
+                    .setColumnName(jsonTableColumn.getName())
+                    .setColumnType(jsonTableColumn.getType().toCode()).builder();
+        }).collect(Collectors.toList());
+//        设置tableView的数据
+        metaInfoTableView.setItems(FXCollections.observableList(collect));
+        fieldTab.setContent(metaInfoTableView);
         dynamicInfoProperty.set("字段总数：" + tableColumnInfoList.size());
-        int rowIndex = 0;
-        for (JsonTableColumn jsonTableColumn : tableColumnInfoList) {
-            String columnName = jsonTableColumn.getName();
-            String columnType = jsonTableColumn.getType().toCode();
-            ObservableList<SpreadsheetCell> fieldRow = FXCollections.observableArrayList();
-            SpreadsheetCell columnCell = SpreadsheetCellType.STRING.createCell(rowIndex, 0, 1, 1, columnName);
-//            字段名不支持修改,如果要修改字段名也需要修改Json文件中字段名
-            columnCell.setEditable(false);
-            SpreadsheetCell typeCell = SpreadsheetCellType.LIST(columnsTypes).createCell(rowIndex, 1, 1, 1, columnType);
-            fieldRow.addAll(columnCell, typeCell);
-            fieldRows.add(fieldRow);
-        }
-        grid.setRows(fieldRows);
-        spreadsheetView.setGrid(grid);
-        fieldTab.setContent(spreadsheetView);
         return fieldTab;
     }
 
-    /**
-     * 初始化工具栏
-     */
-    public void initToolBar(HBox toolBar) {
-        Button button = new Button("保存");
-//        工具栏添加子元素
-        toolBar.getChildren().addAll(button);
-    }
 
     @Override
     public TabKindEnum getTabKind() {

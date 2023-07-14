@@ -9,6 +9,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import org.apache.commons.lang3.StringUtils;
+import org.controlsfx.control.textfield.TextFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,7 @@ public abstract class NativeDataBaseDialog {
     public void show(Node source) {
         Dialog jfxDialog = new Dialog();
         DialogPane dialogPane = jfxDialog.getDialogPane();
+        dialogPane.setPrefSize(400, 250);
         jfxDialog.setTitle(title);
         dialogPane.setContent(createDataBaseDialogContent());
         ObservableList<ButtonType> buttonTypes = dialogPane.getButtonTypes();
@@ -67,7 +70,9 @@ public abstract class NativeDataBaseDialog {
         Button btnCancel = (Button) dialogPane.lookupButton(ButtonType.CANCEL);
         jfxDialog.show();
         btnOk.setOnAction(event -> {
-            apply(dataBaseNameProperty.get(), dataBaseUrlProperty.get());
+            if (StringUtils.isNotEmpty(dataBaseNameProperty.get()) && StringUtils.isNotEmpty(dataBaseUrlProperty.get())) {
+                apply(dataBaseNameProperty.get(), dataBaseUrlProperty.get());
+            }
         });
     }
 
@@ -88,7 +93,6 @@ public abstract class NativeDataBaseDialog {
         GridPane gridPane = new GridPane();
         gridPane.setAlignment(Pos.CENTER);
         gridPane.setVgap(15);
-
         TextField dataBaseNameTextField = new TextField();
         dataBaseNameTextField.textProperty().bindBidirectional(dataBaseNameProperty);
         Label dataBaseNameLabel = new Label("数据库名称: ");

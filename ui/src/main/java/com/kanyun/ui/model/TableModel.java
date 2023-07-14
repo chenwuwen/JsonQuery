@@ -1,6 +1,8 @@
 package com.kanyun.ui.model;
 
-
+/**
+ * 表的实体类
+ */
 public class TableModel implements BaseModel {
 
     private DataBaseModel dataBaseModel;

@@ -11,6 +11,7 @@ public class Constant {
 
     /**
      * 场景是否切换标致
+     * 多线程同步计数器
      */
     public static CountDownLatch SCENE_SWITCH_FLAG;
 }

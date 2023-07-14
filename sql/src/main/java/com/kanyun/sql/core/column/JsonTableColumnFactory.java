@@ -2,17 +2,29 @@ package com.kanyun.sql.core.column;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.kanyun.sql.util.H2Utils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * 数据库表字段工厂类
+ * 用于获取表的元数据信息(即:字段信息) 这一点非常重要
+ * 理由如下：
+ * JsonQuery虽然可以通过解析Json文件(通过读取json文件的第一个json子元素)生成表的字段信息,但是由于json文件的不确定性
+ * 如:[{"name","无问","sex":"男"},{"name":"看云","sex":"男","age":30},{"name","天明"}]
+ * 这就导致了自动获取的表字段信息存在少字段的情况,虽然对于上述json文件 第三个 子元素 也无法获取其 age属性
+ * 但少字段的情况其实更加严重,因此手动维护表字段是非常有必要的。JsonQuery也提供了手动维护字符的UI处理
+ * 获取字段信息时优先获取手动维护的字段信息 {@link JsonTableFieldCacheCallback#call()}
  */
 public class JsonTableColumnFactory {
 
@@ -40,6 +52,7 @@ public class JsonTableColumnFactory {
      * 获取表的字段信息
      * 先从缓存获取(根据schemaName，tableName组成的Key)查询
      * 查询不到,走JsonTableFieldCacheCallback类的call方法查询
+     *
      * @param jsonFile   Json数据文件
      * @param schemaName schema名称
      * @param tableName  表名称
@@ -53,6 +66,100 @@ public class JsonTableColumnFactory {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * 刷新表字段信息缓存
+     *
+     * @param schemaName
+     * @param tableName
+     * @param jsonTableColumnList
+     */
+    public static void refreshTableColumnInfo(String schemaName, String tableName, List<JsonTableColumn> jsonTableColumnList) {
+        String cacheKey = schemaName + "." + tableName;
+        TABLE_FIELD_CACHE.put(cacheKey, jsonTableColumnList);
+        String deleteSql = "delete from `field_info` where `schema`='" + schemaName + "' and `table`='" + tableName + "'";
+        try {
+            H2Utils.executeSql(deleteSql);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+        addTableColumnInfo(schemaName, tableName, jsonTableColumnList);
+    }
+
+    /**
+     * 添加字符信息
+     *
+     * @param schemaName
+     * @param tableName
+     * @param jsonTableColumnList
+     * @throws SQLException
+     */
+    public static void addTableColumnInfo(String schemaName, String tableName, List<JsonTableColumn> jsonTableColumnList) {
+        String insertSql = "insert into `field_info` (`schema`,`table`,`name`,`type`) values";
+        StringJoiner valuesJoiner = new StringJoiner(",");
+        String valueTmp = "('%s','%s','%s','%s')";
+        for (JsonTableColumn jsonTableColumn : jsonTableColumnList) {
+            String value = String.format(valueTmp, schemaName, tableName, jsonTableColumn.getName(), jsonTableColumn.getType().toCode());
+            valuesJoiner.add(value);
+        }
+        insertSql = insertSql + valuesJoiner.toString();
+        try {
+            H2Utils.executeSql(insertSql);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+    }
+
+
+    /**
+     * 加载所有的表字段信息
+     */
+    public static void loadTableColumnInfo() throws SQLException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        TABLE_FIELD_CACHE.invalidateAll();
+        ResultSet resultSet = H2Utils.execQuery("select * from `field_info` ");
+        Map<String, List<JsonTableColumn>> cache = new HashMap<>();
+        while (resultSet.next()) {
+            String cacheKey = resultSet.getString("schema") + "." + resultSet.getString("table");
+            List<JsonTableColumn> columnInfos = cache.getOrDefault(cacheKey, new ArrayList<>());
+            JsonTableColumn jsonTableColumn = new JsonTableColumn();
+            jsonTableColumn.setName(resultSet.getString("name"));
+            jsonTableColumn.setType(ColumnType.getColumnTypeByCode(resultSet.getString("type")));
+            columnInfos.add(jsonTableColumn);
+        }
+        resultSet.close();
+        TABLE_FIELD_CACHE.putAll(cache);
+        stopWatch.stop();
+        log.info("加载所有表元数据信息完毕,耗时:{}ms", stopWatch.getTime());
+    }
+
+    /**
+     * 从数据库中获取表字段信息
+     *
+     * @param schema
+     * @param table
+     * @return
+     */
+    private static List<JsonTableColumn> getJsonTableColumn(String schema, String table) {
+        String querySql = "select * from `field_info` where `schema`='%s' and `table`='%s'";
+        List<JsonTableColumn> jsonTableColumnList = new ArrayList<>();
+        try {
+            ResultSet resultSet = H2Utils.execQuery(String.format(querySql, schema, table));
+
+            while (resultSet.next()) {
+                JsonTableColumn jsonTableColumn = new JsonTableColumn();
+                String type = resultSet.getString("type");
+                jsonTableColumn.setType(ColumnType.getColumnTypeByCode(type));
+                jsonTableColumn.setName(resultSet.getString("name"));
+                jsonTableColumnList.add(jsonTableColumn);
+            }
+            resultSet.close();
+            return jsonTableColumnList;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return jsonTableColumnList;
     }
 
 
@@ -74,7 +181,9 @@ public class JsonTableColumnFactory {
 
         @Override
         public List<JsonTableColumn> call() throws Exception {
-//            todo 可以先通过 schemaName和tableName 查询数据库或者配置文件获取字段信息
+//            todo 先通过 schemaName和tableName 查询数据库或者配置文件获取字段信息,非常重要因为配置文件或数据库中可能保存了手动维护的字段信息,这往往比解析文件获取的字段信息准确的多
+            List<JsonTableColumn> jsonTableColumn = getJsonTableColumn(schemaName, tableName);
+            if (jsonTableColumn.size() != 0) return jsonTableColumn;
             long length = jsonFile.length();
             AbstractAnalysisJsonTableColumn analysisJsonTableColumn;
             if (length <= MAX_LENGTH) {
@@ -85,6 +194,7 @@ public class JsonTableColumnFactory {
             List<JsonTableColumn> tableColumnFromJsonFile = null;
             try {
                 tableColumnFromJsonFile = analysisJsonTableColumn.getTableColumnFromJsonFile();
+                addTableColumnInfo(schemaName, tableName, tableColumnFromJsonFile);
             } catch (Exception e) {
                 e.printStackTrace();
                 log.error("Schema:[{}],文件:[{}],获取表字段异常", schemaName, jsonFile.getName(), e);
