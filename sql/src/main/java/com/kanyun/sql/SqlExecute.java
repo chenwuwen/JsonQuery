@@ -3,6 +3,7 @@ package com.kanyun.sql;
 import com.kanyun.sql.analysis.SqlAnalyzerFactory;
 import com.kanyun.sql.core.ColumnValueConvert;
 import com.kanyun.sql.func.AbstractFuncSource;
+import com.sun.rowset.CachedRowSetImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.rowset.CachedRowSet;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -104,20 +106,30 @@ public class SqlExecute {
         }
 //        创建Statement,作用于创建出来的ResultSet
 //        第一个参数:允许在列表中向前或向后移动，甚至可以进行特定定位 第二个参数:指定不可以更新 ResultSet(缺省值)
-        Statement statement = calciteConnection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_READ_ONLY);
+        Statement statement = calciteConnection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE ,ResultSet.CONCUR_READ_ONLY);
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         log.info("执行SQL分析链,原始SQL:[{}]", sql);
 //        SqlParseHelper.getKind(sql);
         sql = SqlAnalyzerFactory.analysisSql(sql);
         log.info("准备执行分析后的SQL：[{}]", sql);
-//        执行SQL脚本
+//        执行SQL脚本,并获取结果集,注:resultSet在没有调用next()方法时,getRow()的值为0
         ResultSet resultSet = statement.executeQuery(sql);
+//        CachedRowSet cachedRowSet = new CachedRowSetImpl();
+//        cachedRowSet.populate(resultSet);
+//        cachedRowSet.getMaxRows();
         stopWatch.stop();
+//        设置线程变量:查询耗时
         QueryInfoHolder.setQueryCost(stopWatch.getTime(TimeUnit.MILLISECONDS));
-        QueryInfoHolder.setRecordCount(resultSet.getFetchSize());
+//        结果集移到最后一行。这里注意如果需要获取查询记录数,有两种方法,1是遍历结果集累加,2游标执行结果集最后一行并取到行数
+        resultSet.last();
+//       设置线程变量:得到当前行号,也就是记录数,注意resultSet.getFetchSize()方法不是获得记录数,而是获得每次抓取的记录数,默认是0,也就是说不限制,可以用setFetchSize()来设置
+        QueryInfoHolder.setRecordCount(resultSet.getRow());
+//        如果还要用结果集,将游标移动到结果集的初始位置，即在第一行之前,这里注意游标能不能移动要看在创建Statement时用的是什么参数
+        resultSet.beforeFirst();
         log.info("SQL执行用时：[{}毫秒] ", stopWatch.getTime(TimeUnit.MILLISECONDS));
-//        得到执行结果,取出元数据信息,并得到字段数量(这里取出的字段数量,仅仅只是ResultSet第一行的字段数量,并不准确)
+//        得到执行结果,取出元数据信息,并得到字段数量
+//        注：这里取出的字段数量,com.kanyun.sql.core.JsonTable设置的字段数量,并不准确,除非确保每行的字段数一致,对于关系型数据库来说这个是一定的,而对于解析的json文件来说是不一定的,因为json文件很可能每个Json元素的子元素数据不一致
         int columnCount = resultSet.getMetaData().getColumnCount();
         Map<String, Integer> columnInfos = new HashMap();
 //        注意 resultSet的get()方法,要从1开始,而不是0
