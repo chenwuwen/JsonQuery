@@ -2,9 +2,10 @@
 
 JsonQuery是一个使用SQL方式来查询本地json文件的一个工具,支持自定义函数,底层采用Calcite作为查询引擎。
 
-JsonQuery分为两个模块：
+JsonQuery分为三个模块：
 ui: 负责客户端界面
 sql：负责sql执行
+func：负责自定义函数(仅供开发过程中的测试,实际使用时指定自己的自定义函数即可)
 
 ui模块主要使用javaFx
 

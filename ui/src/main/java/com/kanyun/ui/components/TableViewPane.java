@@ -53,5 +53,13 @@ public class TableViewPane extends StackPane {
         }
     }
 
+    /**
+     * 清空表数据及表字段信息
+     */
+    public void clearTableView() {
+        tableView.getColumns().removeAll(tableView.getColumns());
+        tableView.getItems().removeAll(tableView.getItems());
+    }
+
 
 }

@@ -1,7 +1,7 @@
 package com.kanyun.ui.event;
 
 import com.kanyun.sql.QueryInfoHolder;
-import com.kanyun.sql.SqlExecute;
+import com.kanyun.sql.SqlExecutor;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -64,7 +64,7 @@ public class ExecuteSqlService extends Service<Pair<Map<String, Integer>, List<M
         Task<Pair<Map<String, Integer>, List<Map<String, Object>>>> executeSqlTask = new Task<Pair<Map<String, Integer>, List<Map<String, Object>>>>() {
             @Override
             protected Pair<Map<String, Integer>, List<Map<String, Object>>> call() throws Exception {
-                Pair<Map<String, Integer>, List<Map<String, Object>>> data = SqlExecute.execute(modelJson, defaultSchema, sql);
+                Pair<Map<String, Integer>, List<Map<String, Object>>> data = SqlExecutor.execute(modelJson, defaultSchema, sql);
                 queryInfo = QueryInfoHolder.getQueryInfo();
                 return data;
             }

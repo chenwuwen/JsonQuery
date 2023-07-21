@@ -3,7 +3,7 @@ package com.kanyun.ui.components;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import com.jfoenix.controls.JFXTextArea;
 import com.kanyun.sql.QueryInfoHolder;
-import com.kanyun.sql.SqlExecute;
+import com.kanyun.sql.SqlExecutor;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.event.ExecuteSqlService;
 import com.kanyun.ui.event.UserEvent;
@@ -90,6 +90,12 @@ public class SqlComponent extends SplitPane {
         if (executeSqlService.isRunning()) {
             log.warn("准备执行SQL:[{}],查询到异步任务当前为运行状态");
         }
+//        执行SQL时,判断当前TableViewPane是否已加载到界面,如果加载过了,说明之前执行过SQL了,现在重新执行,需要将之前执行的结果清除掉
+        if (getItems().size() > 1) {
+//            由于tableViewPane是成员变量,因此只在界面移除tableViewPane是不够的,tableViewPane依然保留了之前查询结果的字符和数据信息,因此需要将这些信息移除掉
+            tableViewPane.clearTableView();
+            getItems().remove(1);
+        }
         executeSqlService.setSql(sql).setDefaultSchema(defaultSchema).setModelJson(modelJson);
 //        javaFx Service异步任务执行start()方法时,需要保证Service为ready状态,service成功执行后其状态时successed状态,因此再任务结束后(成功/失败/取消),要重置service的状态
         executeSqlService.start();
@@ -127,10 +133,7 @@ public class SqlComponent extends SplitPane {
             List<String> columns = new ArrayList(execute.getLeft().keySet());
             tableViewPane.setTableColumns(columns);
             tableViewPane.setTableRows(FXCollections.observableList(execute.getRight()));
-//            移除tableView,再添加tableView(注意先判断当前项数量再移除),注意:getItems().add(1,tableViewPane)这种形式是有问题的
-            if (getItems().size() > 1) {
-                getItems().remove(1);
-            }
+//            注意:getItems().add(1,tableViewPane)这种形式是有问题的
             getItems().add(tableViewPane);
 //            发送SQL执行完成事件
             UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_COMPLETE);

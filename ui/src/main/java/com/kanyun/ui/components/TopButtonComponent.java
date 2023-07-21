@@ -14,6 +14,10 @@ import javafx.scene.layout.VBox;
  */
 public class TopButtonComponent extends VBox {
 
+    /**
+     * @param btnName 按钮名称
+     * @param imgPath 按钮图片
+     */
     public TopButtonComponent(String btnName, String imgPath) {
         getTypeSelector();
         setAlignment(Pos.CENTER);
@@ -44,6 +48,7 @@ public class TopButtonComponent extends VBox {
 
     /**
      * 返回鼠标移入时的样式
+     *
      * @return
      */
     public String getMouseEnteredStyle() {
@@ -54,6 +59,7 @@ public class TopButtonComponent extends VBox {
 
     /**
      * 返回正常样式
+     *
      * @return
      */
     public String getNormalStyle() {
@@ -62,6 +68,7 @@ public class TopButtonComponent extends VBox {
 
     /**
      * 返回点击样式
+     *
      * @return
      */
     public String getMousePressedStyle() {

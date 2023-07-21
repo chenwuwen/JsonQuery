@@ -2,7 +2,7 @@ package com.kanyun.sql.core;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.kanyun.sql.SqlExecute;
+import com.kanyun.sql.SqlExecutor;
 import org.apache.calcite.model.ModelHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -43,8 +43,8 @@ public class ModelJson {
     }
 
     /**
-     * 构建数据库
-     *
+     * 构建model.json字符串
+     * model.json各模块详解:https://calcite.apache.org/docs/model.html
      * @param schemas       数据库列表
      * @param defaultSchema 默认数据库
      * @return
@@ -54,12 +54,6 @@ public class ModelJson {
         modelJsonObj.addProperty("defaultSchema", defaultSchema);
         String modelJson = modelJsonObj.toString();
         log.info("生成的modelJson内容为[{}]", modelJson);
-        try {
-            log.info("=====准备生成CalciteConnection======");
-            SqlExecute.buildCalciteConnection(modelJson);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
         return modelJson;
     }
 
@@ -98,12 +92,23 @@ public class ModelJson {
      */
     public static void rebuildCalciteConnection(String modelJson) {
         try {
-            SqlExecute.rebuildCalciteConnection(modelJson);
+            SqlExecutor.rebuildCalciteConnection(modelJson);
         } catch (SQLException exception) {
             exception.printStackTrace();
         }
     }
 
+    /**
+     * 创建Calcite连接
+     * @param modelJson
+     */
+    public static void createCalciteConnection(String modelJson) {
+        try {
+            SqlExecutor.buildCalciteConnection(modelJson);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+    }
 
 
 

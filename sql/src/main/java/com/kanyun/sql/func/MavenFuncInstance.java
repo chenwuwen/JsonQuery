@@ -23,6 +23,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.jar.JarFile;
 
@@ -55,8 +58,8 @@ public class MavenFuncInstance extends AbstractFuncSource {
             throw new IllegalArgumentException(msg);
         }
         File file = new File(jarFilePath);
-        JarFile jarFile = new JarFile(file);
-        parseJar(jarFile, null);
+//        Collections.singletonList()只能存放一个元素,多一个或者少一个都会导致异常,因为maven形式的外部函数只有一个jar
+        parseJar(Collections.singletonList(file));
 
     }
 

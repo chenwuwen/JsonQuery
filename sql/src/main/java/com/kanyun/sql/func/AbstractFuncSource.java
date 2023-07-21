@@ -4,19 +4,23 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
-import org.reflections.scanners.SubTypesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 /**
  * 抽象的函数来源
@@ -28,8 +32,8 @@ public abstract class AbstractFuncSource {
     /**
      * 加载jar文件,由各个子类实现,这里的参数是一个不定参数.
      * 加载方法目前仅支持File和Maven.
-     * eg:file 参数可以为  /home/finance/aa.jar
-     * eg:maven 参数为 "com.google.code.gson","gson","2.9.1"
+     * eg:file 参数可以为  /home/finance/aa.jar (可选多个jar,但参数个数是1个,不同jar之间以逗号分隔见com.kanyun.ui.components.FunctionDialog#createJarTab())
+     * eg:maven 参数为 "com.google.code.gson","gson","2.9.1" (只能填一个)
      *
      * @param args
      * @throws Exception
@@ -61,7 +65,7 @@ public abstract class AbstractFuncSource {
      * 初始化加载内置函数
      */
     static {
-        log.info("准备解析缓存内置函数");
+        log.info("应用初始化:准备解析并缓存内置函数");
 //        初始化反射工具类包,内置函数在包com.kanyun.sql.core.func下,同时定义子类型扫描器,扫描指定包下的Object的子类
 //        如果要实现扫描指定类的子类则在filterResultsBy()方法中实现Predicate接口,判断参数是否与指定父类一致
         Reflections reflections = new Reflections("com.kanyun.sql.core.func", Scanners.SubTypes.filterResultsBy(c -> true));
@@ -86,8 +90,8 @@ public abstract class AbstractFuncSource {
      * @param classLoader
      * @throws ClassNotFoundException
      */
-    void parseJar(JarFile jarFile, ClassLoader classLoader) throws ClassNotFoundException {
-        log.info("得到jar文件,准备解析jar文件");
+    private void parseJar(JarFile jarFile, ClassLoader classLoader) throws ClassNotFoundException {
+        log.info("准备解析jar文件:{}", jarFile.getName());
 //        得到jar包中的元素,包括目录
         Enumeration<JarEntry> entries = jarFile.entries();
         while (entries.hasMoreElements()) {
@@ -100,17 +104,73 @@ public abstract class AbstractFuncSource {
             String className = fullName.substring(0, fullName.length() - 6).replaceAll("/", ".");
             Class<?> clazz;
             if (classLoader == null) {
+//                对于当前非jvm进程的类路径来说,不指定类加载器是会报错的:java.lang.ClassNotFoundException,因为默认的类加载器是AppClassLoader,它加载classPath下的jar
                 clazz = Class.forName(className);
             } else {
                 clazz = Class.forName(className, true, classLoader);
             }
+            ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
             cacheFunc(clazz, userDefineFunctions);
         }
     }
 
+    /**
+     * 设置ClassPath
+     * 这里再设置 java.class.path 属性已经没有用了,因为AppClassLoader已经加载过了
+     *
+     * @param jarFiles
+     */
+    void setClassPath(List<File> jarFiles) {
+//        AppClassLoader：用于加载CLASSPATH下的类,是大多数自定义类加载器的父加载器,因此该加载器也用于加载大多数的自定义类,其父加载器为ExtClassLoader,查找范围：java.class.path
+        String classPath = System.getProperty("java.class.path");
+//        获得当前函数包所在路径,多个函数包之前分号间隔
+        String funcPath = jarFiles.stream().map(x -> x.getAbsolutePath()).collect(Collectors.joining(";"));
+//        将jvm启动时的classpath与新添加的函数路径组合起来,并设置到classpath中
+        classPath = classPath + ";" + funcPath;
+        log.info("设置classPath:{}", classPath);
+        System.setProperty("java.class.path", classPath);
+    }
+
+    /**
+     * 解析并加载所有的Jar文件
+     * 同一个类加载器(同一个类加载器实例)
+     *
+     * @param files
+     * @throws Exception
+     */
+    void parseJar(List<File> files) throws Exception {
+//        类加载器已经把所有jar的路径添加进去了
+        ClassLoader classLoaderFromFile = createClassLoaderFromFile(files);
+        setClassPath(files);
+        for (File file : files) {
+            JarFile jarFile = new JarFile(file);
+            parseJar(jarFile, classLoaderFromFile);
+        }
+    }
+
+    /**
+     * 从文件URL获取类加载器
+     * 一次加载所有的外部函数,使用同一个类加载器,而不是加载一个外部jar就创建一个类加载器
+     *
+     * @param files
+     * @return
+     * @throws MalformedURLException
+     */
+    protected ClassLoader createClassLoaderFromFile(List<File> files) throws MalformedURLException {
+        URL[] urls = new URL[files.size()];
+        for (int i = 0; i < files.size(); i++) {
+            urls[i] = files.get(i).toURI().toURL();
+        }
+//        创建URLClassLoader类型的类加载器,第一个参数设置创建的类加载的父类加载器,不使用上下问类加载器  Thread.currentThread().getContextClassLoader()
+        URLClassLoader urlClassLoader =
+                URLClassLoader.newInstance(urls, ClassLoader.getSystemClassLoader());
+        return urlClassLoader;
+    }
 
     /**
      * 将函数缓存到容器中
+     * Calcite自定义函数要求:函数方法可以是静态的，也可以是非静态的，但如果不是静态的，则类必须具有不带参数的公共构造函数
+     * 这里先选择静态方法
      *
      * @param clazz
      * @param container
@@ -134,13 +194,16 @@ public abstract class AbstractFuncSource {
      * 注册函数
      */
     public static void registerFunction(SchemaPlus schemaPlus) {
-        log.debug("=======开始注册函数======");
+        log.debug("=======Schema:[{}],开始注册函数======", schemaPlus.getName());
         Set<Map.Entry<String, Class>> entries = userDefineFunctions.entrySet();
         entries.addAll(innerDefineFunctions.entrySet());
         for (Map.Entry<String, Class> entry : entries) {
             log.debug("待注册的函数信息：[{}.{}()]", entry.getValue().getName(), entry.getKey());
             try {
+//                第一个参数为在SQL中使用的函数名,第二个参数是传入类及类的方法名所创建的函数实例.
+//                例如:自定义的函数为com.kanyun.fun.CustomFunc#applyDate() 但是在写SQL时希望把函数名写为APPLY_DATE,此时第一个参数应为APPLY_DATE
                 schemaPlus.add(entry.getKey(), ScalarFunctionImpl.create(entry.getValue(), entry.getKey()));
+//                schemaPlus.setPath();
             } catch (Exception e) {
                 log.error("函数注册异常!:", e);
             }

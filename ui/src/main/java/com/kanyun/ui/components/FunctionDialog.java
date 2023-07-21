@@ -29,9 +29,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 添加函数弹窗
@@ -169,11 +171,15 @@ public class FunctionDialog extends StackPane {
             FileChooser.ExtensionFilter extensionFilter = new FileChooser.ExtensionFilter("只支持.jar文件", "*.jar");
             fileChooser.getExtensionFilters().add(extensionFilter);
             fileChooser.setTitle("请选择你的jar路径");
-            File file = fileChooser.showOpenDialog(new Stage());
-            if (file != null) {
+//            showOpenDialog()只能选择一个文件,返回值为用户选择的文件,用户未选择文件时返回null
+//            File file = fileChooser.showOpenDialog(new Stage());
+//            showOpenMultipleDialog()可以选择多个文件,返回值为用户选择的多个文件,未选择文件时返回null
+            List<File> files = fileChooser.showOpenMultipleDialog(new Stage());
+            if (files != null) {
 //                由于采用了Property的方式绑定了TextField组件,因此不能在通过TextField.set()方法来设置值,否则报错： A bound value cannot be set.
 //                jarPathField.setText(selectedDirectory.getPath());
-                jarPathProperty.set(file.getAbsolutePath());
+                String jarPaths = files.stream().map(x -> x.getAbsolutePath()).collect(Collectors.joining(","));
+                jarPathProperty.set(jarPaths);
             }
         });
         return jarTab;
@@ -197,6 +203,9 @@ public class FunctionDialog extends StackPane {
         JFXTextField artifactIdField = new JFXTextField();
         Label versionLabel = new Label("version:");
         JFXTextField versionField = new JFXTextField();
+        groupIdField.textProperty().bindBidirectional(mavenGroupIdProperty);
+        artifactIdField.textProperty().bindBidirectional(mavenArtifactIdProperty);
+        versionField.textProperty().bindBidirectional(mavenVersionProperty);
         gridPane.add(groupIdLabel, 0, 0);
         gridPane.add(groupIdField, 1, 0);
         gridPane.add(artifactIdLabel, 0, 1);
@@ -253,7 +262,7 @@ public class FunctionDialog extends StackPane {
                 stringJoiner.add(arg);
             }
             JsonQuery.persistenceFunctionConfig(funcSourceType, stringJoiner.toString());
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
             ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(e);
             sqlExecuteErrDialog.setTitle("添加函数失败");

@@ -33,4 +33,18 @@ public enum FuncSourceType implements FuncSelection {
     public AbstractFuncSource newInstance() throws InstantiationException, IllegalAccessException {
         return null;
     }
+
+    /**
+     * 根据type获取枚举实例
+     * @param type
+     * @return
+     */
+    public static FuncSourceType getInstanceFromType(String type) {
+        for (FuncSourceType value : FuncSourceType.values()) {
+            if (value.getType().equals(type)) {
+                return value;
+            }
+        }
+        return null;
+    }
 }

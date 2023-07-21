@@ -85,13 +85,13 @@ public class JsonQuery {
         } else {
             dataBaseModels = FXCollections.observableList(jsonQueryConfig.getDataBaseModelList());
         }
-        rebuildModelJson();
+        createCalciteConnection();
         JsonTableColumnFactory.loadTableColumnInfo();
     }
 
     /**
      * 持久化配置,每次数据库发生变动,都会进行一次持久化配置
-     * 此时亦更新Calcite的ModelJson
+     * 此时应该刷新Calcite的ModelJson及CalciteConnection
      */
     public static void persistenceConfig() {
         Gson gson = new Gson();
@@ -100,10 +100,41 @@ public class JsonQuery {
         File configFile = new File(configPath);
         try {
             Files.write(config.getBytes(StandardCharsets.UTF_8), configFile);
-            rebuildModelJson();
+            refreshCalciteConnection();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 刷新Calcite连接
+     * 1.先重建model.json文件
+     * 2.重新创建calcite连接
+     */
+    public static void refreshCalciteConnection() {
+        log.info("JsonQuery配置信息发生变更,准备重新生成model.json并重建Calcite连接");
+        JsonArray schemas = new JsonArray();
+        for (DataBaseModel dataBaseModel : dataBaseModels) {
+            schemas.add(ModelJson.buildSchema(dataBaseModel.getName(), dataBaseModel.getUrl()));
+        }
+        String modelJson = ModelJson.buildModelJson(schemas, "");
+        ModelJson.rebuildCalciteConnection(modelJson);
+    }
+
+
+    /**
+     * 刷新Calcite连接
+     * 1.先生成model.json文件
+     * 2.创建calcite连接
+     */
+    public static void createCalciteConnection() {
+        log.info("JsonQuery应用初始化,准备生成model.json并创建Calcite连接");
+        JsonArray schemas = new JsonArray();
+        for (DataBaseModel dataBaseModel : dataBaseModels) {
+            schemas.add(ModelJson.buildSchema(dataBaseModel.getName(), dataBaseModel.getUrl()));
+        }
+        String modelJson = ModelJson.buildModelJson(schemas, "");
+        ModelJson.createCalciteConnection(modelJson);
     }
 
     /**
@@ -128,7 +159,8 @@ public class JsonQuery {
         if (StringUtils.isNotBlank(jsonQueryConfig.getFuncPath())) {
             String funcPath = jsonQueryConfig.getFuncPath();
             String funcType = jsonQueryConfig.getFuncType();
-            if (FuncSourceType.valueOf(funcType) == FuncSourceType.MAVEN) {
+            log.info("准备解析并缓存外置函数,外置函数路径:{}", funcPath);
+            if (FuncSourceType.getInstanceFromType(funcType) == FuncSourceType.MAVEN) {
                 log.info("准备解析缓存来自Maven的函数:[{}]", funcPath);
                 String[] split = funcPath.split(":");
                 FuncSourceType.MAVEN.newInstance().loadJar(split[0], split[1], split[2]);
@@ -136,6 +168,7 @@ public class JsonQuery {
                 log.info("准备解析缓存来自jar文件的函数:[{}]", funcPath);
                 FuncSourceType.FILE.newInstance().loadJar(funcPath);
             }
+            log.info("外置函数解析并缓存完毕");
         }
     }
 

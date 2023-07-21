@@ -23,7 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 
 /**
- * 顶部按钮区组件
+ * 顶部按钮区容器组件
+ * 流式布局
  */
 public class TopButtonPane extends FlowPane {
 

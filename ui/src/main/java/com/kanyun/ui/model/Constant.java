@@ -14,4 +14,9 @@ public class Constant {
      * 多线程同步计数器
      */
     public static CountDownLatch SCENE_SWITCH_FLAG;
+
+    /**
+     * jar文件类型函数的包的分隔符
+     */
+    public static final String FUNC_JAR_FILE_SEPARATOR = ";";
 }

@@ -9,4 +9,7 @@ public class CustomFunc {
     public static String customSuffix(String value,String suffix) {
         return value + suffix;
     }
+    public static String eval() {
+        return "找不到函数时,默认执行eval方法";
+    }
 }
