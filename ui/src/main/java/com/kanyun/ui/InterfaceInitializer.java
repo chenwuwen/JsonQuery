@@ -5,6 +5,7 @@ import com.kanyun.ui.layout.BottomInfoPane;
 import com.kanyun.ui.layout.ContentPane;
 import com.kanyun.ui.layout.DataBasePane;
 import com.kanyun.ui.layout.TopButtonPane;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Scene;
@@ -13,9 +14,21 @@ import javafx.scene.layout.BorderPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 主界面布局构建
+ * 主布局采用BorderPane
+ * 主要由:上(顶部按钮区域),中(内容区域),下(状态信息展示区域) 组成
+ * 中间布局采用SplitPane,主要由左侧数据库表树区域和右侧内容区域组成,并设置了分割比例,同时对分割比例设置了监听
+ * 当前类只负责生成场景
+ */
 public class InterfaceInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(JsonQueryApplication.class);
+
+    /**
+     * 默认的中间区域分隔比例
+     */
+    private static final Double DEFAULT_CENTER_AREA_DIVIDER_POSITIONS = 0.2;
 
     /**
      * 初始化主场景布局
@@ -52,7 +65,7 @@ public class InterfaceInitializer {
 //        分割布局添加子项
         centerPane.getItems().addAll(dataBasePane, contentPane);
 //        设置分割区域宽度比例
-        centerPane.setDividerPositions(0.2);
+        centerPane.setDividerPositions(DEFAULT_CENTER_AREA_DIVIDER_POSITIONS);
         rootPane.setCenter(centerPane);
 
 
@@ -61,7 +74,8 @@ public class InterfaceInitializer {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                 log.debug("监听到centerPane第一个子组件的分隔比例发生变化,原值:[{}],现值:[{}]", oldValue.doubleValue(), newValue.doubleValue());
-                bottomInfoPane.setDataBaseInfoStatusBarWith(null, newValue.doubleValue());
+//                todo 需要注意的是设置左侧StatusBar的宽度,要放在Platform.runLater()中执行,否则当宽度突然发生变化,StatusBar的宽度可能不会发生变化,或需要其他事件才能发生变化 见 类TopButtonComponent
+                Platform.runLater(() -> {bottomInfoPane.setDataBaseInfoStatusBarWith(null, newValue.doubleValue());});
             }
         });
         return scene;

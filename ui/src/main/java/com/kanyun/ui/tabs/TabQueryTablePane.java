@@ -178,11 +178,10 @@ public class TabQueryTablePane extends VBox implements TabKind {
         Map<String, Integer> columnInfos = result.getLeft();
 //         表数据
         List<Map<String, Object>> data = result.getRight();
-        List<String> columns = new ArrayList<String>(columnInfos.keySet());
 //        实例化自定义TableView组件
         TableViewPane tableViewPane = new TableViewPane();
 //       设置table列信息
-        tableViewPane.setTableColumns(columns);
+        tableViewPane.setTableColumns(columnInfos);
 //       设置table行数据
         tableViewPane.setTableRows(FXCollections.observableList(data));
         getChildren().add(tableViewPane);

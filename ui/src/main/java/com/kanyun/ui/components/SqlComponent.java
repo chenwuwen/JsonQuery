@@ -130,8 +130,9 @@ public class SqlComponent extends SplitPane {
             log.debug("异步任务[{}]成功执行完成,将发射事件给父组件,用以更新动态信息栏", getCurrentSql());
             Object result = event.getSource().getValue();
             Pair<Map<String, Integer>, List<Map<String, Object>>> execute = (Pair<Map<String, Integer>, List<Map<String, Object>>>) result;
-            List<String> columns = new ArrayList(execute.getLeft().keySet());
-            tableViewPane.setTableColumns(columns);
+//            得到结果字段信息(字段名和字段类型)
+            Map<String, Integer> columnInfos = execute.getLeft();
+            tableViewPane.setTableColumns(columnInfos);
             tableViewPane.setTableRows(FXCollections.observableList(execute.getRight()));
 //            注意:getItems().add(1,tableViewPane)这种形式是有问题的
             getItems().add(tableViewPane);

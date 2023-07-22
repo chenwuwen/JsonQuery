@@ -11,11 +11,14 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
 import org.apache.commons.lang3.StringUtils;
+import org.controlsfx.control.Notifications;
 import org.controlsfx.control.tableview2.TableView2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,27 +71,32 @@ public class TableColumnActionBar extends HBox {
         JFXButton addFieldBtn = new JFXButton("添加字段");
         JFXButton delFieldBtn = new JFXButton("移除字段");
         JFXButton istFieldBtn = new JFXButton("插入字段");
-        JFXButton moveUpFieldBtn = new JFXButton("上移字段",createGlyph("icomoon.long-arrow-down"));
-        JFXButton moveDownFieldBtn = new JFXButton("下移字段",createGlyph("icomoon.long-arrow-up"));
-        JFXButton reGenerateFieldBtn = new JFXButton("重生成字段",createGlyph("icomoon.repeat, rotate-right"));
+        JFXButton moveUpFieldBtn = new JFXButton("上移字段", createGlyph("icomoon.long-arrow-down"));
+        JFXButton moveDownFieldBtn = new JFXButton("下移字段", createGlyph("icomoon.long-arrow-up"));
+        JFXButton reGenerateFieldBtn = new JFXButton("重生成字段", createGlyph("icomoon.repeat, rotate-right"));
 //        工具栏添加子元素
         getChildren().addAll(saveFieldBtn, separator0, addFieldBtn, delFieldBtn, istFieldBtn, separator1, moveUpFieldBtn, moveDownFieldBtn, separator2, reGenerateFieldBtn);
         addFieldBtn.setOnAction(event -> {
             metaInfoTableView.getItems().add(new TableMetaData());
         });
         saveFieldBtn.setOnAction(event -> {
-            ObservableList<TableMetaData> items = metaInfoTableView.getItems();
-            List<JsonTableColumn> collect = items.stream()
-                    .filter(item -> StringUtils.isNotEmpty(item.getColumnName()) && StringUtils.isNotEmpty(item.getColumnType()))
-                    .map(item -> {
-                        JsonTableColumn jsonTableColumn = new JsonTableColumn();
-                        jsonTableColumn.setName(item.getColumnName());
-                        jsonTableColumn.setType(ColumnType.getColumnTypeByCode(item.getColumnType()));
-                        return jsonTableColumn;
-                    }).collect(Collectors.toList());
-            JsonTableColumnFactory.refreshTableColumnInfo(items.get(0).getSchema(), items.get(0).getTable(), collect);
-
+            try {
+                ObservableList<TableMetaData> items = metaInfoTableView.getItems();
+                List<JsonTableColumn> collect = items.stream()
+                        .filter(item -> StringUtils.isNotEmpty(item.getColumnName()) && StringUtils.isNotEmpty(item.getColumnType()))
+                        .map(item -> {
+                            JsonTableColumn jsonTableColumn = new JsonTableColumn();
+                            jsonTableColumn.setName(item.getColumnName());
+                            jsonTableColumn.setType(ColumnType.getColumnTypeByCode(item.getColumnType()));
+                            return jsonTableColumn;
+                        }).collect(Collectors.toList());
+                JsonTableColumnFactory.refreshTableColumnInfo(items.get(0).getSchema(), items.get(0).getTable(), collect);
 //            dynamicInfoProperty.set("字段总数：" + items.size());
+                showSuccessMsg();
+            } catch (Exception e) {
+                log.error("字段信息保存失败:", e);
+                showErrorMsg(e.getMessage());
+            }
         });
         delFieldBtn.setOnAction(event -> {
 //            当前被选中行
@@ -158,6 +166,7 @@ public class TableColumnActionBar extends HBox {
      * 需要注意的是,当自己想要的图标获取为空时,最好看看图标名是否正确,因为图标名可能包含空格或其他符号
      * 这里使用JFoenix的SVGGlyphLoader来加载图标,可以加载多个字体,不同字体的同名图标,可以在加载字体时
      * 设置前缀,这里在传递图标名称时,也需要带上图标前缀
+     *
      * @param glyphName 图标名称 注意图标名称可能包含空格等特殊符号,当无法获取图标时,请再三验证图标名称是否正确
      * @return
      */
@@ -167,5 +176,32 @@ public class TableColumnActionBar extends HBox {
         btnGlyph.setFill(Color.GRAY);
         btnGlyph.setSize(ICON_SIZE, ICON_SIZE);
         return btnGlyph;
+    }
+
+    /**
+     * 字段保存成功提示
+     */
+    private void showSuccessMsg() {
+        Notifications notificationBuilder = Notifications.create()
+                .text("保存成功")
+                .hideAfter(Duration.seconds(2))
+                .position(Pos.CENTER)
+//                通知数超过阈值时折叠所有通知为一个通知,0为禁用阈值
+                .threshold(3, Notifications.create().title("Threshold Notification"));
+        notificationBuilder.showInformation();
+    }
+
+    /**
+     * 字段保存失败提示
+     */
+    private void showErrorMsg(String msg) {
+        Notifications notificationBuilder = Notifications.create()
+                .title("保存失败")
+                .text(msg)
+                .hideAfter(Duration.seconds(2))
+                .position(Pos.CENTER)
+//                通知数超过阈值时折叠所有通知为一个通知,0为禁用阈值
+                .threshold(3, Notifications.create().title("Threshold Notification"));
+        notificationBuilder.showInformation();
     }
 }

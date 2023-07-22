@@ -33,12 +33,16 @@ public class BottomInfoPane extends HBox {
      * 数据库信息属性
      */
     private SimpleStringProperty dataBaseInfoProperty = new SimpleStringProperty();
+
     /**
      * 动态信息属性
      */
     private SimpleStringProperty dynamicInfoProperty = new SimpleStringProperty();
 
-    private SimpleDoubleProperty posProperty = new SimpleDoubleProperty();
+
+    /**
+     * 当前底部状态栏宽度属性(也是整个界面的宽度属性)
+     */
     private SimpleDoubleProperty parentWidthProperty = new SimpleDoubleProperty();
 
 

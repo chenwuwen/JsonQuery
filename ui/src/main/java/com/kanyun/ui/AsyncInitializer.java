@@ -81,5 +81,6 @@ public class AsyncInitializer implements Runnable {
         mainStage.setScene(mainScene);
         mainStage.show();
         splashStage.close();
+        mainStage.setOnCloseRequest(request -> Platform.exit());
     }
 }

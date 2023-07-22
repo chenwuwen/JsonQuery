@@ -1,6 +1,10 @@
 package com.kanyun.sql.core;
 
+import com.kanyun.sql.util.DateTypeHelper;
+import com.kanyun.sql.util.NumberTypeHelper;
 import org.apache.calcite.jdbc.CalciteResultSet;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,7 +196,8 @@ public class ColumnValueConvert {
 
     /**
      * 取日期型字段值的方法
-     *
+     * 先判断取出来的值是否是数字,如果是非数字,则直接取出
+     * 如果是数字,则看是几位数字,然后将数字转为日期
      * @param columnLabel 字段名(或as后的别名)
      * @return
      */
@@ -201,6 +206,12 @@ public class ColumnValueConvert {
             @Override
             public Date apply(ResultSet resultSet) throws Exception {
                 try {
+                    Object date = resultSet.getObject(columnLabel);
+//                    判断值是否是数字
+                    if (NumberUtils.isDigits(String.valueOf(date))) {
+                        Long timeStamp = Long.valueOf(String.valueOf(date));
+                        return DateTypeHelper.getDateFromTimeStamp(timeStamp);
+                    }
                     return resultSet.getDate(columnLabel);
                 } catch (SQLException exception) {
                     exception.printStackTrace();

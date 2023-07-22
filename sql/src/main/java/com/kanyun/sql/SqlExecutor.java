@@ -195,7 +195,8 @@ public class SqlExecutor {
 //        得到执行结果,取出元数据信息,并得到字段数量
 //        注：这里取出的字段数量,com.kanyun.sql.core.JsonTable设置的字段数量,并不准确,除非确保每行的字段数一致,对于关系型数据库来说这个是一定的,而对于解析的json文件来说是不一定的,因为json文件很可能每个Json元素的子元素数据不一致
         int columnCount = resultSet.getMetaData().getColumnCount();
-        Map<String, Integer> columnInfos = new HashMap();
+//        这里使用LinkedHashMap主要为了保证返回给界面的字段顺序与界面检查表字段的顺序一致,因为ResultSet中的字段元数据与界面检查表字段的顺序一致
+        Map<String, Integer> columnInfos = new LinkedHashMap();
 //        注意 resultSet的get()方法,要从1开始,而不是0
         for (int i = 1; i <= columnCount; i++) {
 //            如果sql中未使用AS来指定别名,则getColumnLabel返回的值将与getColumnName方法返回的值相同
