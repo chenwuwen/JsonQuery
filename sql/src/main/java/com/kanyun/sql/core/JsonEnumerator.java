@@ -20,6 +20,12 @@ import java.util.Map;
 
 /**
  * 元素迭代器,定义数据的输出
+ * Linq4j(Linq) 是真正的执行查询数据源的操作
+ * Linq是一个支持查询各种数据源的框架
+ * LINQ（语言集成查询）是C＃和VB.NET中的统一查询语法，用于从不同的源和格式检索数据。它集成在C＃或VB中，
+ * 从而消除了编程语言和数据库之间的不匹配，并为不同类型的数据源提供了单个查询接口:https://www.cainiaojc.com/linq/what-is-linq.html
+ * LINQ4j:是Java语言实现的一个开源的LINQ
+ * Calcite通过物理执行计划生成,最终得到完整的LINQ的BlockStatement,也就是完整的LINQ代码,最后通过Janino编译执行
  */
 public class JsonEnumerator implements Enumerator<Object[]> {
 
@@ -62,6 +68,7 @@ public class JsonEnumerator implements Enumerator<Object[]> {
             log.error("反序列化文件:{}失败", file.getAbsolutePath(), e);
             throw new RuntimeException("反序列化" + file.getAbsolutePath() + "失败", e);
         }
+//        将元素转换为Linq的Enumerable对象
         enumerator = Linq4j.enumerator(tableData);
         this.schema = schema;
         this.table = table;

@@ -3,6 +3,7 @@ package com.kanyun.ui.layout;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.event.UserEvent;
+import com.kanyun.ui.model.Constant;
 import com.kanyun.ui.model.DataBaseModel;
 import com.kanyun.ui.tabs.TabKind;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -44,9 +45,6 @@ public class BottomInfoPane extends HBox {
      * 当前底部状态栏宽度属性(也是整个界面的宽度属性)
      */
     private SimpleDoubleProperty parentWidthProperty = new SimpleDoubleProperty();
-
-
-
     /**
      * DataBase侧状态组件
      */
@@ -132,15 +130,16 @@ public class BottomInfoPane extends HBox {
 
 
     /**
-     * 动态设置dataBaseInfoStatusBar的宽度
-     *
-     * @param pos        比例
-     * @param parentWith 父级宽度
+     * 通过当前组件的总宽度和设置的分割比例动态设置dataBaseInfoStatusBar的宽度
+     * 同时由于设置了左侧信息栏的最大宽度属性,因此需要加以判断
+     * 宽度+3 是因为分割线的像素稍多几个
+     * 如果后面更改了 SplitPane的分割线的样式(宽度) 将更新此值
+     * @param pos 比例
      */
-    public void setDataBaseInfoStatusBarWith(Double parentWith, Double pos) {
-        dataBaseInfoStatusBar.setPrefWidth(parentWidthProperty.get() * pos);
+    public void setDataBaseInfoStatusBarWith(Double pos) {
+        dataBaseInfoStatusBar.setPrefWidth(parentWidthProperty.get() * pos > Constant.DATABASE_TREE_PANE_MAX_WIDTH
+                ? Constant.DATABASE_TREE_PANE_MAX_WIDTH + 3 : parentWidthProperty.get() * pos);
     }
-
 
 
 }

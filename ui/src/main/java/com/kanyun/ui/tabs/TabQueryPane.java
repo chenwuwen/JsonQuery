@@ -11,7 +11,6 @@ import com.sun.javafx.event.EventUtil;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.animation.TranslateTransition;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -154,42 +153,20 @@ public class TabQueryPane extends VBox implements TabKind {
         runImageView.setFitWidth(TOOLBAR_IMG_SIZE);
         runImageView.setFitHeight(TOOLBAR_IMG_SIZE);
         runBtn.setGraphic(runImageView);
-//        鼠标是否退出状态
-        SimpleBooleanProperty mouseExits = new SimpleBooleanProperty(true);
+
         TranslateTransition translateTransition = getTranslateTransition(runImageView);
 
-//        按钮按下事件
-        runBtn.setOnMousePressed(event -> {
-//            执行正向动画
-            translateTransition.setRate(1);
-            translateTransition.play();
+        runBtn.setOnAction(event -> {
+            currentExecuteSql = sqlComponent.getCurrentSql();
+            if (StringUtils.isEmpty(currentExecuteSql)) return;
+            UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
+            userEvent.setSql(sqlComponent.getCurrentSql());
+//            发射事件,将执行的SQL设置到信息栏中
+            EventUtil.fireEvent(this, userEvent);
+//            执行SQL
+            sqlComponent.executeSQL(currentSchema.get());
         });
-
-//        按钮释放事件
-        runBtn.setOnMouseReleased(event -> {
-            if (!mouseExits.get()) {
-//                鼠标释放时,只有鼠标还没有退出按钮才可以触发操作
-//                执行反向动画
-                translateTransition.setRate(-1);
-                translateTransition.play();
-                currentExecuteSql = sqlComponent.getCurrentSql();
-                if (StringUtils.isEmpty(currentExecuteSql)) return;
-                UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
-                userEvent.setSql(sqlComponent.getCurrentSql());
-//                发射事件,将执行的SQL设置到信息栏中
-                EventUtil.fireEvent(this, userEvent);
-//                执行SQL
-                sqlComponent.executeSQL(currentSchema.get());
-            }
-        });
-
-//        鼠标退出事件
-        runBtn.setOnMouseExited(event -> {
-//            执行反向动画
-            translateTransition.setRate(-1);
-            translateTransition.play();
-            mouseExits.set(false);
-        });
+        setButtonTransitionAnimation(runBtn, translateTransition);
         return runBtn;
     }
 
@@ -228,40 +205,11 @@ public class TabQueryPane extends VBox implements TabKind {
         beautifyImageView.setFitHeight(TOOLBAR_IMG_SIZE);
         JFXButton beautifyBtn = new JFXButton("美化SQL", fontAwesomeIcon);
 
-//        鼠标是否退出状态
-        SimpleBooleanProperty mouseExits = new SimpleBooleanProperty(true);
-
         TranslateTransition translateTransition = getTranslateTransition(beautifyImageView);
-
         beautifyBtn.setOnAction(event -> {
             sqlComponent.beautifySQL();
         });
-
-//        按钮按下事件
-//        beautifyBtn.setOnMousePressed(event -> {
-////            执行正向动画
-//            translateTransition.setRate(1);
-//            translateTransition.play();
-//        });
-//
-////        按钮释放事件
-//        beautifyBtn.setOnMouseReleased(event -> {
-//            if (!mouseExits.get()) {
-////                鼠标释放时,只有鼠标还没有退出按钮才可以触发操作
-////                执行反向动画
-//                translateTransition.setRate(-1);
-//                translateTransition.play();
-//                sqlComponent.beautifySQL();
-//            }
-//        });
-//
-////        鼠标退出事件
-//        beautifyBtn.setOnMouseExited(event -> {
-////            执行反向动画
-//            translateTransition.setRate(-1);
-//            translateTransition.play();
-//            mouseExits.set(false);
-//        });
+        setButtonTransitionAnimation(beautifyBtn, translateTransition);
 
         return beautifyBtn;
     }
@@ -269,7 +217,7 @@ public class TabQueryPane extends VBox implements TabKind {
     /**
      * 创建动画实例类
      *
-     * @param target
+     * @param target 移动目标
      * @return
      */
     private static TranslateTransition getTranslateTransition(ImageView target) {
@@ -280,14 +228,40 @@ public class TabQueryPane extends VBox implements TabKind {
 //        设定动画起始位置
         translateTransition.setFromX(0);
         translateTransition.setFromY(0);
-//        设定动画目的位置
-        translateTransition.setToX(2);
+//        设定动画目的位置(下沉效果,Y轴移动2个像素)
+//        translateTransition.setToX(2);
         translateTransition.setToY(2);
 //        设定动画执行对象
         translateTransition.setNode(target);
 //        是否自动反转动画
         translateTransition.setAutoReverse(false);
         return translateTransition;
+    }
+
+    /**
+     * 设置按钮位移动画
+     */
+    private void setButtonTransitionAnimation(Button btn,TranslateTransition translateTransition) {
+//        按钮按下事件
+        btn.setOnMousePressed(event -> {
+//            执行正向动画
+            translateTransition.setRate(1);
+            translateTransition.play();
+        });
+//        按钮释放事件
+        btn.setOnMouseReleased(event -> {
+//           执行反向动画
+            translateTransition.setRate(-1);
+            translateTransition.play();
+
+        });
+
+//        鼠标退出事件
+        btn.setOnMouseExited(event -> {
+//            执行反向动画
+            translateTransition.setRate(-1);
+            translateTransition.play();
+        });
     }
 
     @Override

@@ -14,6 +14,8 @@ import java.util.Map;
 
 /**
  * 异步执行SQL服务
+ * javafx.concurrent.Service是JavaFX中的一个抽象类，它提供了线程安全和异步执行任务的基本功能。
+ * 在任务执行期间，Service会处理WorkerStateEvent事件，该事件指定了每当Worker实现的状态发生变化时发生的事件
  */
 public class ExecuteSqlService extends Service<Pair<Map<String, Integer>, List<Map<String, Object>>>> {
 

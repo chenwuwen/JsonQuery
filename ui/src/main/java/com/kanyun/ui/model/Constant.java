@@ -19,4 +19,10 @@ public class Constant {
      * jar文件类型函数的包的分隔符
      */
     public static final String FUNC_JAR_FILE_SEPARATOR = ";";
+
+    /**
+     * 左侧数据库列表树区域的最大宽度
+     * 同时作用于底部信息栏的分割线的最大位置
+     */
+    public static final Double DATABASE_TREE_PANE_MAX_WIDTH = 300d;
 }

@@ -3,21 +3,23 @@ package com.kanyun.sql;
 import com.kanyun.sql.analysis.SqlAnalyzerFactory;
 import com.kanyun.sql.core.ColumnValueConvert;
 import com.kanyun.sql.func.AbstractFuncSource;
+import com.kanyun.sql.func.ExternalFuncClassLoader;
 import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalciteResultSet;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ConversionUtil;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -33,16 +35,21 @@ public class SqlExecutor {
 
     static Properties info;
 
+    /**
+     * Calcite连接
+     */
     static CalciteConnection calciteConnection;
 
     static {
+//        也可以通过saffron.properties文件配置
         System.setProperty("saffron.default.charset", ConversionUtil.NATIVE_UTF16_CHARSET_NAME);
         System.setProperty("saffron.default.nationalcharset", ConversionUtil.NATIVE_UTF16_CHARSET_NAME);
         System.setProperty("saffron.default.collation.name", ConversionUtil.NATIVE_UTF16_CHARSET_NAME + "$en_US");
         info = new Properties();
         info.setProperty(CalciteConnectionProperty.LEX.camelName(), Lex.JAVA.name());
         info.setProperty(CalciteConnectionProperty.DEFAULT_NULL_COLLATION.camelName(), NullCollation.LAST.name());
-        info.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "false");
+//        是否忽略大小写
+        info.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "true");
         info.setProperty(CalciteConnectionProperty.PARSER_FACTORY.camelName(), "org.apache.calcite.sql.parser.impl.SqlParserImpl#FACTORY");
     }
 
@@ -92,6 +99,8 @@ public class SqlExecutor {
 
     /**
      * 执行SQL
+     * 注意Calcite SQL 不支持双引号,在SQL语法中双引号用于标识表名,列名等标识符,但是在Calcite中,
+     * 双引号不被视为标识符的一部分,因此不支持双引号(暂时没有找到可以转义字符的工具)
      *
      * @param modelJson     calcite model.json文件
      * @param sql           待执行的sql
@@ -100,8 +109,6 @@ public class SqlExecutor {
      * @throws SQLException
      */
     public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) throws Exception {
-//        转义SQL中的双引号,sql中包含双引号,sql执行报错,转移了也有问题
-//        sql = StringEscapeUtils.escapeJava(sql);
         delayedExecute();
         buildCalciteConnection(modelJson);
 //        动态设置defaultSchema(之所以动态设置,是避免重新获取Connection,因为使用ModelJson获取Connection浪费性能)
@@ -110,6 +117,9 @@ public class SqlExecutor {
 //            去掉sql中最后的分号
             sql = sql.substring(0, sql.length() - 1);
         }
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        Frameworks.newConfigBuilder().parserConfig(SqlParser.config().withCaseSensitive(false))
+                .context(Contexts.of(contextClassLoader)).build();
 //        创建Statement,作用于创建出来的ResultSet
 //        第一个参数:允许在列表中向前或向后移动，甚至可以进行特定定位 第二个参数:指定不可以更新 ResultSet(缺省值)
         Statement statement = calciteConnection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
@@ -118,14 +128,14 @@ public class SqlExecutor {
         log.info("执行SQL分析链,原始SQL:[{}]", sql);
 //        SqlParseHelper.getKind(sql);
         sql = SqlAnalyzerFactory.analysisSql(sql);
-        log.info("准备执行分析后的SQL：[{}]", sql);
+        log.info("准备执行分析后的SQL：[{}],线程ID：{}", sql, Thread.currentThread().getId());
 //        执行SQL脚本,并获取结果集,注:resultSet在没有调用next()方法时,getRow()的值为0,当前游标指向第一行的前一行
         ResultSet resultSet = statement.executeQuery(sql);
 //        CachedRowSet cachedRowSet = new CachedRowSetImpl();
 //        cachedRowSet.populate(resultSet);
 //        cachedRowSet.getMaxRows();
 
-        log.info("SQL执行用时：[{}毫秒] ", stopWatch.getTime(TimeUnit.MILLISECONDS));
+        log.info("SQL执行用时：[{}毫秒]线程ID：{} ", stopWatch.getTime(TimeUnit.MILLISECONDS), Thread.currentThread().getId());
 //        获取查询记录数,注意使用类型如Long类型的可变与不可变
         AtomicLong recordCount = new AtomicLong(0);
 //        遍历结果集,抽取数据及元数据信息,注意结果集遍历后,ResultSet的游标已指向最后一行的后一行
@@ -147,12 +157,24 @@ public class SqlExecutor {
      * @throws InterruptedException
      */
     private static void delayedExecute() throws Exception {
-//        使用线程上下文类加载器加载类的前提是,当前线程已经通过 Thread.currentThread().setContextClassLoader()设置了类加载器,否则就是默认的AppClassLoader
-//        Class<?> o = Class.forName("com.kanyun.func.string.StringFuncUtil", false, Thread.currentThread().getContextClassLoader());
-//        Method reverseMethod = o.getMethod("reverse", String.class);
-//        Object invoke = reverseMethod.invoke(o.newInstance(),"123");
+//        实际上janino框架是会取上下文类加载器的org.codehaus.janino.SimpleCompiler#parentClassLoader,但是calcite的
+//        org.apache.calcite.rel.metadata.JaninoRelMetadataProvider#compile()方法调用了
+//        SimpleCompiler的setParentClassLoader()方法且参数传递的是JaninoRexCompiler类的类加载器,即AppClassLoader
+//        而这个AppClassLoader的来源通过 org.apache.calcite.rel.metadata.JaninoRelMetadataProvider#compile()方法
+//        来看发现是 JaninoRelMetadataProvider类的类加载器
+//        由于sql执行是异步操作,因此需要在此处重新设置线程上下文类加载器
+        Thread.currentThread().setContextClassLoader(ExternalFuncClassLoader.getInstance());
+
+//        使用线程上下文类加载器加载类的前提是:当前线程已经通过 Thread.currentThread().setContextClassLoader()设置了类加载器,否则就是默认的AppClassLoader
+//        加以验证看设置的线程上下文类加载器是否可以加载外部的自定义类
+        Class<?> clazz = Class.forName("com.kanyun.func.string.StringFuncUtil", false, Thread.currentThread().getContextClassLoader());
+//        Method reverseMethod = clazz.getMethod("reverse", String.class);
+//        Object invoke = reverseMethod.invoke(clazz.newInstance(),"123");
 //        log.info(invoke.toString());
-        TimeUnit.SECONDS.sleep(2);
+
+
+        log.info("设置线程上下文类加载器,当前线程ID:{}", Thread.currentThread().getId());
+        TimeUnit.SECONDS.sleep(0);
     }
 
     /**

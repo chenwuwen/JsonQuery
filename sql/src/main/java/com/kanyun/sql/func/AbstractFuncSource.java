@@ -2,10 +2,12 @@ package com.kanyun.sql.func;
 
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
+import org.apache.commons.lang3.ClassLoaderUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.ClassLoaderUtil;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -161,9 +163,10 @@ public abstract class AbstractFuncSource {
         for (int i = 0; i < files.size(); i++) {
             urls[i] = files.get(i).toURI().toURL();
         }
-//        创建URLClassLoader类型的类加载器,第一个参数设置创建的类加载的父类加载器,不使用上下问类加载器  Thread.currentThread().getContextClassLoader()
-        URLClassLoader urlClassLoader =
-                URLClassLoader.newInstance(urls, ClassLoader.getSystemClassLoader());
+//        创建URLClassLoader类型的类加载器,第一个参数设置创建的类加载的父类加载器,不使用上下文类加载器  Thread.currentThread().getContextClassLoader()
+//        URLClassLoader urlClassLoader =
+//                URLClassLoader.newInstance(urls, ClassLoader.getSystemClassLoader());
+        ExternalFuncClassLoader urlClassLoader = ExternalFuncClassLoader.newInstance(urls, ClassLoader.getSystemClassLoader());
         return urlClassLoader;
     }
 
@@ -203,7 +206,6 @@ public abstract class AbstractFuncSource {
 //                第一个参数为在SQL中使用的函数名,第二个参数是传入类及类的方法名所创建的函数实例.
 //                例如:自定义的函数为com.kanyun.fun.CustomFunc#applyDate() 但是在写SQL时希望把函数名写为APPLY_DATE,此时第一个参数应为APPLY_DATE
                 schemaPlus.add(entry.getKey(), ScalarFunctionImpl.create(entry.getValue(), entry.getKey()));
-//                schemaPlus.setPath();
             } catch (Exception e) {
                 log.error("函数注册异常!:", e);
             }

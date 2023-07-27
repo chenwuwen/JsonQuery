@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * 重生成表字段信息弹窗
+ * 输入json内容,重新生成字段
  */
 public abstract class ReGenerateTableFieldDialog {
 
@@ -87,6 +88,7 @@ public abstract class ReGenerateTableFieldDialog {
         closeButton.setOnAction(event -> alert.hideWithAnimation());
         applyButton.setOnAction(event -> {
             if (jsonItemArea.validate()) {
+//                获取输入的Json内容,并解析字段及类型
                 String item = jsonItemArea.getText();
                 JsonObject jsonObject = JsonParser.parseString(item).getAsJsonObject();
                 List<JsonTableColumn> jsonTableColumnList = AbstractAnalysisJsonTableColumn.analysisJsonItem(jsonObject);
@@ -105,5 +107,9 @@ public abstract class ReGenerateTableFieldDialog {
         alert.show();
     }
 
+    /**
+     * 处理Json解析后的结果,由子类实现
+     * @param tableMetaDataObservableList 包含表名,schema名,字段名及字段类型
+     */
     abstract public void handlerResult(ObservableList<TableMetaData> tableMetaDataObservableList);
 }

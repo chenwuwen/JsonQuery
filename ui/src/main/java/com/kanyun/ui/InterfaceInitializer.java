@@ -5,6 +5,7 @@ import com.kanyun.ui.layout.BottomInfoPane;
 import com.kanyun.ui.layout.ContentPane;
 import com.kanyun.ui.layout.DataBasePane;
 import com.kanyun.ui.layout.TopButtonPane;
+import com.kanyun.ui.model.Constant;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -68,14 +69,15 @@ public class InterfaceInitializer {
         centerPane.setDividerPositions(DEFAULT_CENTER_AREA_DIVIDER_POSITIONS);
         rootPane.setCenter(centerPane);
 
-
+//        设置左侧数据库列表树的最大宽度,这样当拖动分割线至设置的最大宽度时,分割线将不能被拖动
+        dataBasePane.setMaxWidth(Constant.DATABASE_TREE_PANE_MAX_WIDTH);
 //        监听分割组件中的第一个子组件的分割大小,然后改变BottomInfoPane中的dataBaseInfoStatusBar的大小
         centerPane.getDividers().get(0).positionProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                 log.debug("监听到centerPane第一个子组件的分隔比例发生变化,原值:[{}],现值:[{}]", oldValue.doubleValue(), newValue.doubleValue());
 //                todo 需要注意的是设置左侧StatusBar的宽度,要放在Platform.runLater()中执行,否则当宽度突然发生变化,StatusBar的宽度可能不会发生变化,或需要其他事件才能发生变化 见 类TopButtonComponent
-                Platform.runLater(() -> {bottomInfoPane.setDataBaseInfoStatusBarWith(null, newValue.doubleValue());});
+                Platform.runLater(() -> {bottomInfoPane.setDataBaseInfoStatusBarWith(newValue.doubleValue());});
             }
         });
         return scene;

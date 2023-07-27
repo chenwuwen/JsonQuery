@@ -26,6 +26,23 @@
     /*-fx-padding: 0.75em 0em 0.75em 0em ;*/
 }
 
-/*.split-pane > .split-pane-divider {*/
-/*    -fx-padding: 0 0.75em 0 0.75em;*/
-/*} */
+.split-pane > .split-pane-divider {
+    -fx-padding: 0 0.1em 0 0.1em;
+}
+
+.text-area {
+    -fx-background-color:  white;
+    -fx-border-style: none;
+    -fx-font-family: Consolas;
+    /*内边距,SQL与边框的距离(上右下左)*/
+    -fx-padding: 2 15 2 15;
+    -fx-font-size: 16px;
+    /*提示文字填充颜色*/
+    -fx-prompt-text-fill: rgba(109, 105, 92, 0.49);
+    /*文字选中背景填充颜色*/
+    -fx-highlight-fill: rgba(0, 136, 255, 0.62);
+    /*文字选中填充颜色*/
+    -fx-highlight-text-fill: #0a0a0a;
+    -fx-text-fill: #0a0a0a;
+    /*-fx-text-fill: transparent;*/
+}

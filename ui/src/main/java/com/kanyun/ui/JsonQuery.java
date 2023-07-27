@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.sql.core.column.JsonTableColumnFactory;
 import com.kanyun.sql.func.AbstractFuncSource;
+import com.kanyun.sql.func.ExternalFuncClassLoader;
 import com.kanyun.sql.func.FuncSourceType;
 import com.kanyun.ui.model.DataBaseModel;
 import com.kanyun.ui.model.JsonQueryConfig;
@@ -134,6 +135,7 @@ public class JsonQuery {
             schemas.add(ModelJson.buildSchema(dataBaseModel.getName(), dataBaseModel.getUrl()));
         }
         String modelJson = ModelJson.buildModelJson(schemas, "");
+        Thread.currentThread().setContextClassLoader(ExternalFuncClassLoader.getInstance());
         ModelJson.createCalciteConnection(modelJson);
     }
 

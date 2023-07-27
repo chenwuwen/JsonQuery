@@ -1,6 +1,7 @@
 package com.kanyun.ui.components;
 
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
+import com.github.vertical_blank.sqlformatter.languages.Dialect;
 import com.jfoenix.controls.JFXTextArea;
 import com.kanyun.sql.QueryInfoHolder;
 import com.kanyun.sql.SqlExecutor;
@@ -12,12 +13,15 @@ import com.kanyun.ui.layout.TopButtonPane;
 import com.sun.javafx.event.EventUtil;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.geometry.Orientation;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.util.Static;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -52,7 +56,7 @@ public class SqlComponent extends SplitPane {
     /**
      * SQL编写区域
      */
-    private JFXTextArea sqlArea = new JFXTextArea();
+    private JFXTextArea writeSqlArea = new JFXTextArea();
 
     /**
      * SQL执行结果tableView
@@ -60,9 +64,9 @@ public class SqlComponent extends SplitPane {
     private TableViewPane tableViewPane = new TableViewPane();
 
     /**
-     * SQL
+     * 当前编写的SQL,与writeSqlArea.textProperty()属性进行了绑定
      */
-    private SimpleStringProperty sqlProperty = new SimpleStringProperty();
+    private SimpleStringProperty currentSqlProperty = new SimpleStringProperty();
 
     public SqlComponent() {
         setId("SqlComponent");
@@ -71,12 +75,17 @@ public class SqlComponent extends SplitPane {
 //        设置分隔布局的方向
         setOrientation(Orientation.VERTICAL);
 //        添加子组件
-        getItems().addAll(sqlArea);
+        getItems().addAll(writeSqlArea);
 //        将TextArea的文本属性绑定到SimpleStringProperty,方便后面取值,设值以及监听,双向绑定,注意不要绑定反了,否则TextArea将不能编辑
-//        sqlArea.textProperty().bind(sqlProperty);
-        sqlProperty.bind(sqlArea.textProperty());
+//        writeSqlArea.textProperty().bind(currentSqlProperty);
+        currentSqlProperty.bind(writeSqlArea.textProperty());
         executeSqlService = new ExecuteSqlService();
         addAsyncTaskListener();
+//        设置节点是否可见
+//        writeSqlArea.setVisible(false);
+//        自动获取焦点,需放在Platform.runLater()中执行
+        Platform.runLater(()->writeSqlArea.requestFocus());
+        writeSqlArea.setPromptText("提示：1、SQL中可以使用单引号,不要使用双引号");
     }
 
     /**
@@ -85,10 +94,10 @@ public class SqlComponent extends SplitPane {
      * @param defaultSchema
      */
     public void executeSQL(String defaultSchema) {
-        String sql = sqlProperty.get();
+        String sql = currentSqlProperty.get();
         String modelJson = ModelJson.getModelJson(defaultSchema);
         if (executeSqlService.isRunning()) {
-            log.warn("准备执行SQL:[{}],查询到异步任务当前为运行状态");
+            log.warn("准备执行SQL:[{}],查询到异步任务当前为运行状态",sql);
         }
 //        执行SQL时,判断当前TableViewPane是否已加载到界面,如果加载过了,说明之前执行过SQL了,现在重新执行,需要将之前执行的结果清除掉
         if (getItems().size() > 1) {
@@ -105,10 +114,10 @@ public class SqlComponent extends SplitPane {
      * 美化SQL
      */
     public void beautifySQL() {
-        String sql = sqlProperty.get();
+        String sql = currentSqlProperty.get();
         if (StringUtils.isEmpty(sql)) return;
-        String beautifySql = SqlFormatter.standard().format(sql);
-        sqlArea.setText(beautifySql);
+        String beautifySql = SqlFormatter.of(Dialect.MySql).format(sql);
+        writeSqlArea.setText(beautifySql);
     }
 
     /**
@@ -147,10 +156,10 @@ public class SqlComponent extends SplitPane {
 //        异步任务执行失败
         executeSqlService.setOnFailed(event -> {
             log.error("异步任务[{}]执行失败", getCurrentSql(), event.getSource().getException());
-//            executeSqlService
+//            创建任务执行失败事件
             UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_FAIL);
             userEvent.setException(event.getSource().getException());
-//            给该组件的父组件发射SQL执行完成事件
+//            给该组件的父组件发射SQL执行失败事件
             EventUtil.fireEvent(getParent(), userEvent);
             executeSqlService.reset();
         });
@@ -159,6 +168,12 @@ public class SqlComponent extends SplitPane {
         executeSqlService.setOnCancelled(event -> {
             log.warn("异步任务[{}]被取消", getCurrentSql());
             executeSqlService.reset();
+        });
+        writeSqlArea.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                log.info("编写SQL区域内容发生变化,oldValue:{},newValue:{}", oldValue, newValue);
+            }
         });
     }
 
@@ -169,7 +184,7 @@ public class SqlComponent extends SplitPane {
      * @return
      */
     public String getCurrentSql() {
-        return sqlArea.getText();
+        return writeSqlArea.getText();
     }
 
 }
