@@ -1,5 +1,8 @@
 package com.kanyun.sql.func;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -16,10 +19,14 @@ import java.util.List;
  */
 public class ExternalFuncClassLoader extends URLClassLoader {
 
+    private static final Logger logger = LoggerFactory.getLogger(ExternalFuncClassLoader.class);
+
+
     private static ExternalFuncClassLoader externalFuncClassLoader;
 
     /**
      * 私有的构造方法,禁止外部通过new方法创建类加载器实例
+     *
      * @param urls
      * @param parent
      */
@@ -58,11 +65,15 @@ public class ExternalFuncClassLoader extends URLClassLoader {
 
     /**
      * 获取类加载器实例
+     *
      * @return
      */
     public static ExternalFuncClassLoader getInstance() {
         if (externalFuncClassLoader == null) {
-            throw new NullPointerException();
+            URL[] urls = {};
+            externalFuncClassLoader = new ExternalFuncClassLoader(urls, Thread.currentThread().getContextClassLoader());
+            logger.warn("创建了未包含任何路径的自定义类加载器实例");
+//            throw new NullPointerException();
         }
         return externalFuncClassLoader;
     }

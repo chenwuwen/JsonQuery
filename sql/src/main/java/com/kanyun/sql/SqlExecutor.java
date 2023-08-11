@@ -11,10 +11,13 @@ import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalciteResultSet;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ConversionUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -95,6 +98,8 @@ public class SqlExecutor {
         SchemaPlus rootSchema = calciteConnection.getRootSchema();
 //        注册自定义函数(Calcite中内置的函数主要在org.apache.calcite.sql.fun.SqlStdOperatorTable中,包括常见的算术运算符、时间函数等)
         AbstractFuncSource.registerFunction(rootSchema);
+//        注册聚合函数
+        AbstractFuncSource.registerAggFunction(rootSchema);
     }
 
     /**
@@ -109,7 +114,7 @@ public class SqlExecutor {
      * @throws SQLException
      */
     public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) throws Exception {
-        delayedExecute();
+//        delayedExecute();
         buildCalciteConnection(modelJson);
 //        动态设置defaultSchema(之所以动态设置,是避免重新获取Connection,因为使用ModelJson获取Connection浪费性能)
         calciteConnection.setSchema(defaultSchema);
@@ -127,7 +132,11 @@ public class SqlExecutor {
         stopWatch.start();
         log.info("执行SQL分析链,原始SQL:[{}]", sql);
 //        SqlParseHelper.getKind(sql);
-        sql = SqlAnalyzerFactory.analysisSql(sql);
+        if (StringUtils.isNotEmpty(defaultSchema)) {
+            sql = SqlAnalyzerFactory.analysisSql(sql, calciteConnection.getRootSchema().getSubSchema(defaultSchema));
+        } else {
+            sql = SqlAnalyzerFactory.analysisSql(sql, calciteConnection.getRootSchema());
+        }
         log.info("准备执行分析后的SQL：[{}],线程ID：{}", sql, Thread.currentThread().getId());
 //        执行SQL脚本,并获取结果集,注:resultSet在没有调用next()方法时,getRow()的值为0,当前游标指向第一行的前一行
         ResultSet resultSet = statement.executeQuery(sql);
@@ -164,7 +173,8 @@ public class SqlExecutor {
 //        来看发现是 JaninoRelMetadataProvider类的类加载器
 //        由于sql执行是异步操作,因此需要在此处重新设置线程上下文类加载器
         Thread.currentThread().setContextClassLoader(ExternalFuncClassLoader.getInstance());
-
+        ClassLoader classLoader = JaninoRelMetadataProvider.class.getClassLoader();
+//        org.codehaus.commons.compiler.properties
 //        使用线程上下文类加载器加载类的前提是:当前线程已经通过 Thread.currentThread().setContextClassLoader()设置了类加载器,否则就是默认的AppClassLoader
 //        加以验证看设置的线程上下文类加载器是否可以加载外部的自定义类
         Class<?> clazz = Class.forName("com.kanyun.func.string.StringFuncUtil", false, Thread.currentThread().getContextClassLoader());

@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.kanyun.sql.SqlExecutor;
 import org.apache.calcite.model.ModelHandler;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,8 +80,8 @@ public class ModelJson {
         schemaObj.addProperty("type", "custom");
 //        如果不想在Schema中添加表,则设置为false
 //        schemaObj.addProperty("mutable", "false");
-//        指定使用factory类
-        schemaObj.addProperty("factory", "com.kanyun.sql.core.JsonSchemaFactory");
+//        指定使用factory类(类的全限定名)
+        schemaObj.addProperty("factory", com.kanyun.sql.core.JsonSchemaFactory.class.getName());
         JsonObject operand = new JsonObject();
         operand.addProperty("directory", path);
         schemaObj.add("operand", operand);
@@ -88,7 +89,13 @@ public class ModelJson {
     }
 
     /**
-     * 重建Calcite连接
+     * 重建Calcite连接。
+     * 重建连接的时机：
+     * 1：schema发生变动(新增/移除)
+     * 2：自定义函数变更
+     * 这里除了重新生成model.json文件,并创建新的连接外(耗费性能),还可以通过
+     * 已有连接 calciteConnection.getRootSchema().add() 来添加schema
+     * 移除的化目前还有找到api
      */
     public static void rebuildCalciteConnection(String modelJson) {
         try {
