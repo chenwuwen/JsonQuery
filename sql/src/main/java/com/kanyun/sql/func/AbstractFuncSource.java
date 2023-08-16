@@ -1,24 +1,20 @@
 package com.kanyun.sql.func;
 
+import com.kanyun.sql.util.ClassUtil;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
-import org.apache.commons.lang3.ClassLoaderUtils;
+import org.apache.calcite.sql.SqlOperatorTable;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.ClassLoaderUtil;
 
 import java.io.File;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -53,6 +49,11 @@ public abstract class AbstractFuncSource {
     private final static ConcurrentHashMap<String, Class> innerDefineFunctions = new ConcurrentHashMap<>();
 
     /**
+     * 内置聚合函数(UDAF),key为函数名,value为函数所在的类,聚合函数的方法名是大写的类名,聚合函数:一个类就是一个函数
+     */
+    private final static ConcurrentHashMap<String, Class> innerDefineAggregateFunctions = new ConcurrentHashMap<>();
+
+    /**
      * 用户自定义聚合类函数(UDAF),区别：UDF：一行返回一行，UDAF：多行返回一行,如sum()/count()/avg() 注意：distinct()不是聚合函数,它仅仅去重
      * 用户定义的聚合函数类似于用户定义的函数，但是每个函数都有几个对应的Java方法，每个方法对应于聚合生命周期中的每个阶段:
      * init 创建一个累加器
@@ -76,11 +77,11 @@ public abstract class AbstractFuncSource {
 //            判断当前class不是枚举,接口,注解,抽象类等类型
             if (!clazz.isEnum() && !clazz.isInterface() && !clazz.isAnnotation()) {
                 if (!Modifier.isAbstract(clazz.getModifiers())) {
-                    cacheFunc(clazz, innerDefineFunctions);
+                    cacheFunc(clazz, innerDefineFunctions, innerDefineAggregateFunctions);
                 }
             }
         }
-        log.info("内置函数加载完毕,函数数量：[{}]", innerDefineFunctions.size());
+        log.info("内置函数加载完毕,自定义函数数量：[{}],自定义聚合函数数量:[{}]", innerDefineFunctions.size(), innerDefineAggregateFunctions.size());
     }
 
 
@@ -112,13 +113,16 @@ public abstract class AbstractFuncSource {
                 clazz = Class.forName(className, true, classLoader);
             }
             ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
-            cacheFunc(clazz, userDefineFunctions);
+            cacheFunc(clazz, userDefineFunctions, userDefineAggregateFunctions);
         }
     }
 
     /**
      * 设置ClassPath
-     * 这里再设置 java.class.path 属性已经没有用了,因为AppClassLoader已经加载过了
+     * (注:)这里再设置 java.class.path 属性已经没有用了,因为AppClassLoader已经加载过了,不会再重新进行加载,除非重启jvm
+     * 不过,虽然再次设置java.class.path 属性没用,但是我们可以获取AppClassLoader的实例,
+     * 由于AppClassLoader是URLClassLoader的子类,因此AppClassLoader实例强可以强转为URLClassLoader,此时可以反射调用
+     * URLClassLoader的addURL()方法,并传入jar路径,以实现动态jar的加载
      *
      * @param jarFiles
      */
@@ -129,8 +133,11 @@ public abstract class AbstractFuncSource {
         String funcPath = jarFiles.stream().map(x -> x.getAbsolutePath()).collect(Collectors.joining(";"));
 //        将jvm启动时的classpath与新添加的函数路径组合起来,并设置到classpath中
         classPath = classPath + ";" + funcPath;
-        log.info("设置classPath:{}", classPath);
+        log.info("设置classPath的属性:{}", classPath);
+//        此操作并不会触发类的加载
         System.setProperty("java.class.path", classPath);
+//        关键在这一步,获取AppClassLoader示例并强转为URLClassLoader,然后反射调用URLClassLoader#addURL()实现AppClassLoader的动态加载
+        jarFiles.stream().forEach(x -> ClassUtil.addClasspath(x.getAbsolutePath()));
     }
 
     /**
@@ -173,12 +180,18 @@ public abstract class AbstractFuncSource {
     /**
      * 将函数缓存到容器中
      * Calcite自定义函数要求:函数方法可以是静态的，也可以是非静态的，但如果不是静态的，则类必须具有不带参数的公共构造函数
-     * 这里先选择静态方法
+     * 这里先选择静态方法作为自定义函数进行缓存
      *
      * @param clazz
-     * @param container
+     * @param udfContainer
+     * @param clazz
      */
-    private static void cacheFunc(Class clazz, ConcurrentHashMap<String, Class> container) {
+    private static void cacheFunc(Class clazz, ConcurrentHashMap<String, Class> udfContainer, ConcurrentHashMap<String, Class> udafContainer) {
+        if (isAggregationFunction(clazz)) {
+//            聚合函数的方法名是类的大写
+            udafContainer.put(clazz.getSimpleName().toUpperCase(), clazz);
+            return;
+        }
         Method[] methods = clazz.getMethods();
         for (Method method : methods) {
 //                得到方法修饰符
@@ -188,9 +201,25 @@ public abstract class AbstractFuncSource {
                 String msgTemplate = "类 [%s] 的方法 [%s] 被选中,将作为SQL函数使用";
                 String msg = String.format(msgTemplate, clazz.getCanonicalName(), method.getName());
                 log.info(msg);
-                container.put(method.getName(), clazz);
+                udfContainer.put(method.getName(), clazz);
             }
         }
+    }
+
+    /**
+     * 判断当前类是否是聚合函数
+     *
+     * @return
+     */
+    private static boolean isAggregationFunction(Class<?> clazz) {
+        boolean result = false;
+        Method initMethod = ClassUtil.findMethod(clazz, "init");
+        Method addMethod = ClassUtil.findMethod(clazz, "add");
+        Method resultMethod = ClassUtil.findMethod(clazz, "result");
+        if (initMethod != null && addMethod != null && resultMethod != null) {
+            result = true;
+        }
+        return result;
     }
 
     /**
@@ -198,17 +227,36 @@ public abstract class AbstractFuncSource {
      */
     public static void registerFunction(SchemaPlus schemaPlus) {
         log.debug("=======Schema:[{}],开始注册函数======", schemaPlus.getName());
-        Set<Map.Entry<String, Class>> entries = userDefineFunctions.entrySet();
-        entries.addAll(innerDefineFunctions.entrySet());
-        for (Map.Entry<String, Class> entry : entries) {
+        Set<Map.Entry<String, Class>> udfEntries = userDefineFunctions.entrySet();
+        udfEntries.addAll(innerDefineFunctions.entrySet());
+        for (Map.Entry<String, Class> entry : udfEntries) {
             log.debug("待注册的函数信息：[{}.{}()]", entry.getValue().getName(), entry.getKey());
             try {
 //                第一个参数为在SQL中使用的函数名,第二个参数是传入类及类的方法名所创建的函数实例.
 //                例如:自定义的函数为com.kanyun.fun.CustomFunc#applyDate() 但是在写SQL时希望把函数名写为APPLY_DATE,此时第一个参数应为APPLY_DATE
                 schemaPlus.add(entry.getKey(), ScalarFunctionImpl.create(entry.getValue(), entry.getKey()));
             } catch (Exception e) {
-                log.error("函数注册异常!:", e);
+                log.error("自定义函数注册异常!:", e);
             }
         }
+    }
+    /**
+     * 注册聚合函数
+     */
+    public static void registerAggFunction(SchemaPlus schemaPlus) {
+        log.debug("=======Schema:[{}],开始注册聚合函数======", schemaPlus.getName());
+        Set<Map.Entry<String, Class>> udafEntries = userDefineAggregateFunctions.entrySet();
+        udafEntries.addAll(innerDefineAggregateFunctions.entrySet());
+        for (Map.Entry<String, Class> entry : udafEntries) {
+            log.debug("待注册的函数信息：[{}.{}()]", entry.getValue().getName(), entry.getKey());
+            try {
+//                第一个参数为在SQL中使用的函数名,第二个参数是传入类及类的方法名所创建的函数实例.
+//                例如:自定义的函数为com.kanyun.fun.CustomFunc#applyDate() 但是在写SQL时希望把函数名写为APPLY_DATE,此时第一个参数应为APPLY_DATE
+                schemaPlus.add(entry.getKey(), ScalarFunctionImpl.create(entry.getValue(), entry.getKey()));
+            } catch (Exception e) {
+                log.error("自定义聚合函数注册异常!:", e);
+            }
+        }
+
     }
 }

@@ -97,6 +97,12 @@
                 <version>1.34.0</version>
                 <scope>test</scope>
             </dependency>
+            <!--sql查询结果,格式化输出-->
+            <dependency>
+                <groupId>org.verdictdb</groupId>
+                <artifactId>verdictdb-core</artifactId>
+                <version>0.5.8</version>
+            </dependency>
 
 
             <!--maven下载依赖相关-->

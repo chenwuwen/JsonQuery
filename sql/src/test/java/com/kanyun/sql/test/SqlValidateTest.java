@@ -2,8 +2,10 @@ package com.kanyun.sql.test;
 
 
 import com.google.common.base.Joiner;
+import com.kanyun.sql.hr.JavaHrSchema;
 import com.kanyun.sql.simple.SimpleSchema;
 import com.kanyun.sql.simple.SimpleTable;
+import org.apache.calcite.adapter.java.ReflectiveSchema;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -23,11 +25,10 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.Before;
 import org.junit.Test;
+import org.verdictdb.commons.DBTablePrinter;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -98,6 +99,24 @@ public class SqlValidateTest {
             throw new RuntimeException(e);
         }
 
+    }
+
+    /**
+     * 测试反射创建Schema与table
+     * 此处并没有创建Schema与Table,而是构建了三个简单的实体类,利用calcite的ReflectiveSchema来创建Schema与table
+     * @throws SQLException
+     */
+    @Test
+    public void hrSchemaTest() throws SQLException {
+        SchemaPlus rootSchema = calciteConnection.getRootSchema();
+//        注册一个对象作为 schema ，通过反射读取 JavaHrSchema 对象内部结构，将其属性 employee 和 department 作为表
+        rootSchema.add("hr", new ReflectiveSchema(new JavaHrSchema()));
+        Statement statement = calciteConnection.createStatement();
+        ResultSet resultSet = statement.executeQuery(
+                "select e.emp_id, e.name as emp_name, e.dept_no, d.name as dept_name "
+                        + "from hr.employee as e "
+                        + "left join hr.department as d on e.dept_no = d.dept_no");
+        DBTablePrinter.printResultSet(resultSet);
     }
 
     static void lineage(SchemaPlus schemaPlus, String sql) {
