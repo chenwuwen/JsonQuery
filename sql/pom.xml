@@ -61,6 +61,7 @@
         <dependency>
             <groupId>org.verdictdb</groupId>
             <artifactId>verdictdb-core</artifactId>
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
@@ -73,6 +74,14 @@
                 <exclusion>
                     <groupId>org.codehaus.janino</groupId>
                     <artifactId>janino</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

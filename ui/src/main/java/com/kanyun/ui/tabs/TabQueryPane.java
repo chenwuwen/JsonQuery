@@ -94,7 +94,7 @@ public class TabQueryPane extends VBox implements TabKind {
     private SimpleStringProperty currentSchema = new SimpleStringProperty();
 
     public TabQueryPane() {
-        log.debug("TabQueryPane 新建查询页面被打开,当前默认数据库是：[{}]",currentSchema.get());
+        log.debug("TabQueryPane 新建查询页面被打开,当前默认数据库是：[{}]", currentSchema.get());
 //        工具栏
         HBox toolBar = new HBox();
 //        设置子组件间间距
@@ -102,7 +102,7 @@ public class TabQueryPane extends VBox implements TabKind {
         toolBar.setPadding(new Insets(5, 0, 5, 2));
         initToolBar(toolBar);
 //        初始化SQL组件
-        sqlComponent = new SqlComponent();
+        sqlComponent = new SqlComponent(currentSchema);
 //        设置SQL子组件总是填充剩余空间
         VBox.setVgrow(sqlComponent, Priority.ALWAYS);
         getChildren().addAll(toolBar, sqlComponent);
@@ -157,17 +157,25 @@ public class TabQueryPane extends VBox implements TabKind {
         TranslateTransition translateTransition = getTranslateTransition(runImageView);
 
         runBtn.setOnAction(event -> {
-            currentExecuteSql = sqlComponent.getCurrentSql();
+            currentExecuteSql = sqlComponent.getCurrentSql(false);
             if (StringUtils.isEmpty(currentExecuteSql)) return;
-            UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
-            userEvent.setSql(sqlComponent.getCurrentSql());
-//            发射事件,将执行的SQL设置到信息栏中
-            EventUtil.fireEvent(this, userEvent);
-//            执行SQL
-            sqlComponent.executeSQL(currentSchema.get());
+            fireEventAndExecuteSQL(currentExecuteSql);
         });
         setButtonTransitionAnimation(runBtn, translateTransition);
         return runBtn;
+    }
+
+    /**
+     * 发射事件(底部信息栏查询语句展示及执行进度和执行时间展示)和执行SQL
+     * @param sql
+     */
+    private void fireEventAndExecuteSQL(String sql) {
+        UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
+        userEvent.setSql(sql);
+//       发射事件,将执行的SQL设置到信息栏中
+        EventUtil.fireEvent(this, userEvent);
+//       执行SQL
+        sqlComponent.executeSQL(currentSchema.get(), sql);
     }
 
     /**
@@ -241,7 +249,7 @@ public class TabQueryPane extends VBox implements TabKind {
     /**
      * 设置按钮位移动画
      */
-    private void setButtonTransitionAnimation(Button btn,TranslateTransition translateTransition) {
+    private void setButtonTransitionAnimation(Button btn, TranslateTransition translateTransition) {
 //        按钮按下事件
         btn.setOnMousePressed(event -> {
 //            执行正向动画

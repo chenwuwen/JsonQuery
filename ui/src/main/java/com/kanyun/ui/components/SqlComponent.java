@@ -3,14 +3,10 @@ package com.kanyun.ui.components;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import com.github.vertical_blank.sqlformatter.languages.Dialect;
 import com.jfoenix.controls.JFXTextArea;
-import com.kanyun.sql.QueryInfoHolder;
-import com.kanyun.sql.SqlExecutor;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.SqlSuggestionUtil;
 import com.kanyun.ui.event.ExecuteSqlService;
 import com.kanyun.ui.event.UserEvent;
-import com.kanyun.ui.event.UserEventBridgeService;
-import com.kanyun.ui.layout.TopButtonPane;
 import com.sun.javafx.event.EventUtil;
 import com.sun.javafx.scene.control.skin.TextAreaSkin;
 import impl.org.controlsfx.skin.AutoCompletePopup;
@@ -20,33 +16,21 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.concurrent.Service;
-import javafx.concurrent.Task;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
-import javafx.scene.Cursor;
-import javafx.scene.Node;
-import javafx.scene.control.Skin;
+import javafx.scene.control.IndexRange;
 import javafx.scene.control.SplitPane;
-import javafx.scene.control.TextArea;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.transform.Transform;
 import javafx.stage.Window;
-import org.apache.calcite.sql.SqlUtil;
-import org.apache.calcite.util.Static;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.controlsfx.dialog.ExceptionDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
-import java.awt.event.FocusEvent;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -87,10 +71,16 @@ public class SqlComponent extends SplitPane {
     /**
      * 自动完成弹窗组件
      */
-    private AutoCompletePopup autoCompletePopup = new AutoCompletePopup();
+    private AutoCompletePopup<String> autoCompletePopup = new AutoCompletePopup();
 
-    public SqlComponent() {
+    /**
+     * 当前Schema
+     */
+    private SimpleStringProperty currentSchema;
+
+    public SqlComponent(SimpleStringProperty currentSchema) {
         setId("SqlComponent");
+        this.currentSchema = currentSchema;
 //        节点中子布局不会随拖动变化大小
 //        setResizableWithParent();
 //        设置分隔布局的方向
@@ -106,6 +96,7 @@ public class SqlComponent extends SplitPane {
 //        writeSqlArea.setVisible(false);
 //        自动获取焦点,需放在Platform.runLater()中执行
         Platform.runLater(() -> writeSqlArea.requestFocus());
+        writeSqlArea.setWrapText(false);
         writeSqlArea.setPromptText("提示：1、SQL中可以使用单引号,不要使用双引号");
     }
 
@@ -114,8 +105,9 @@ public class SqlComponent extends SplitPane {
      *
      * @param defaultSchema
      */
-    public void executeSQL(String defaultSchema) {
-        String sql = currentSqlProperty.get();
+    public void executeSQL(String defaultSchema, String sql) {
+//        这里之所以不通过TextArea的textProperty的属性取获取SQL,主要是因为存在只执行选中SQL的情况
+//        String sql = currentSqlProperty.get();
         String modelJson = ModelJson.getModelJson(defaultSchema);
         if (executeSqlService.isRunning()) {
             log.warn("准备执行SQL:[{}],查询到异步任务当前为运行状态", sql);
@@ -147,7 +139,7 @@ public class SqlComponent extends SplitPane {
     public void stopSQL() {
         if (executeSqlService.isRunning()) {
             boolean cancel = executeSqlService.cancel();
-            log.debug("当前SQL任务:[{}],正在执行,取消任务执行,操作结果:[{}],并重置任务状态[setOnCancelled()]", getCurrentSql(), cancel);
+            log.debug("当前SQL任务:[{}],正在执行,取消任务执行,操作结果:[{}],并重置任务状态[setOnCancelled()]", executeSqlService.getSql(), cancel);
         }
     }
 
@@ -157,7 +149,7 @@ public class SqlComponent extends SplitPane {
     private void addAsyncTaskListener() {
 //        异步任务成功执行完成
         executeSqlService.setOnSucceeded(event -> {
-            log.debug("异步任务[{}]成功执行完成,将发射事件给父组件,用以更新动态信息栏", getCurrentSql());
+            log.debug("异步任务[{}]成功执行完成,将发射事件给父组件,用以更新动态信息栏", executeSqlService.getSql());
             Object result = event.getSource().getValue();
             Pair<Map<String, Integer>, List<Map<String, Object>>> execute = (Pair<Map<String, Integer>, List<Map<String, Object>>>) result;
 //            得到结果字段信息(字段名和字段类型)
@@ -176,7 +168,7 @@ public class SqlComponent extends SplitPane {
 
 //        异步任务执行失败
         executeSqlService.setOnFailed(event -> {
-            log.error("异步任务[{}]执行失败", getCurrentSql(), event.getSource().getException());
+            log.error("异步任务[{}]执行失败", executeSqlService.getSql(), event.getSource().getException());
 //            创建任务执行失败事件
             UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_FAIL);
             userEvent.setException(event.getSource().getException());
@@ -187,7 +179,7 @@ public class SqlComponent extends SplitPane {
 
 //        异步任务取消
         executeSqlService.setOnCancelled(event -> {
-            log.warn("异步任务[{}]被取消", getCurrentSql());
+            log.warn("异步任务[{}]被取消", executeSqlService.getSql());
             executeSqlService.reset();
         });
 
@@ -202,53 +194,184 @@ public class SqlComponent extends SplitPane {
 //        给TextArea添加鼠标移动事件(暂时没用)
 //        writeSqlArea.addEventHandler(MouseEvent.MOUSE_MOVED, mouseEventHandler);
 
+        EventHandler<KeyEvent> shortcutKeyEventHandler = createShortcutKey();
+//        给TextArea添加键盘按下事件(用作快捷键,注意:需要防止快捷键冲突,当按下快捷键不生效时,检查下快捷键是否与系统或其他应用冲突了)
+        writeSqlArea.addEventHandler(KeyEvent.KEY_PRESSED, shortcutKeyEventHandler);
         writeSqlArea.textProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                log.info("编写SQL区域内容发生变化,oldValue:{},newValue:{}", oldValue, newValue);
+                log.debug("编写SQL区域内容发生变化,oldValue:{},newValue:{}", oldValue, newValue);
+                autoCompletePopup.hide();
 //                插入符号(光标)在文本中的位置,其实就是光标所在的文字中的索引
                 int cursorIndex = writeSqlArea.getCaretPosition();
-                log.info("当前光标在文字中的索引位置(从0开始):{}", cursorIndex);
-                List<String> suggestions = SqlSuggestionUtil.search(newValue, cursorIndex);
-                if (suggestions != null && !suggestions.isEmpty()) {
-                    ObservableList suggestionsList = autoCompletePopup.getSuggestions();
-                    suggestionsList.removeAll(suggestionsList);
+                log.debug("当前光标在文字中的索引位置(从0开始):{}", cursorIndex);
+
+                List<String> suggestions = SqlSuggestionUtil.searchSuggestion(currentSchema.get(), newValue, cursorIndex);
+                if (!suggestions.isEmpty()) {
+                    ObservableList<String> suggestionsList = autoCompletePopup.getSuggestions();
+                    suggestionsList.clear();
                     suggestionsList.addAll(suggestions);
-                    autoCompletePopup.show(writeSqlArea, computeAutoCompletePopupCoordinate().getLeft(), computeAutoCompletePopupCoordinate().getRight());
+//                    最后两个参数要注意,它要求传递的是屏幕坐标
+                    autoCompletePopup.show(writeSqlArea, computeAutoCompletePopupCoordinate().getX(), computeAutoCompletePopupCoordinate().getY());
                 }
 
+            }
+        });
+
+//        SQL自动完成弹窗监听事件,当选中建议时,将建议插入到SQL中(插入建议时要考虑是否需要删除已输入的字符,避免出现sSELECT的情况)
+        autoCompletePopup.setOnSuggestion(event -> {
+            if (event.getEventType() == AutoCompletePopup.SuggestionEvent.SUGGESTION) {
+                String selectedSuggestion = event.getSuggestion();
+                log.debug("选中代码提示框中的建议:{},并将建议插入到SQL中", selectedSuggestion);
+                while (true) {
+//                    为了避免出现SQL插入建议后,出现sSELECT的情况,需要将当前光标前的字符进行删除处理,只有当遇到空格或.的情况才停止删除
+                    int caretPosition = writeSqlArea.getCaretPosition();
+                    if (caretPosition == 0) break;
+//                    判断光标前的第一个字符是否是点,或者空格,或者分号(遇到分号表示到达上一个SQL),如果是则跳过
+                    if (writeSqlArea.getText(caretPosition - 1, caretPosition).equals(".")
+                            || writeSqlArea.getText(caretPosition - 1, caretPosition).equals(";")
+                            || StringUtils.isBlank(writeSqlArea.getText(caretPosition - 1, caretPosition))) {
+                        break;
+                    }
+                    writeSqlArea.deleteText(caretPosition - 1, caretPosition);
+                }
+                writeSqlArea.insertText(writeSqlArea.getCaretPosition(), selectedSuggestion);
+                autoCompletePopup.hide();
             }
         });
     }
 
     /**
-     * 计算SQL提示弹窗显示坐标(屏幕坐标)
+     * 计算SQL提示弹窗显示位置的坐标(屏幕坐标),这里我们要求代码提示弹窗在光标的下面且不影响已输入的文字显示
+     * 这里重点的要注意获取光标坐标的方法是:
+     * Bounds caretBounds = TextAreaSkin.getCaretBounds()
+     * caretBounds.getMaxX() / caretBounds.getMaxY() / caretBounds.getMinY() / caretBounds.getMinY()
+     * 上面四个方法分别对应获取光标的右下角X/右下角Y/左上角Y/左上角X 的坐标信息
+     * caret 和 cursor 在中文里都被会被翻译为光标，但实际上指的是两种完全不同的东西，caret 指的是那个一闪一闪提示用户输入的小图标，
+     * 它的位置相对固定的，作用是提示用户当前文档的输入位置；而 cursor 指的是鼠标的图标，跟着一直随着鼠标一起移动，
+     * 它的作用是提示当前文档的模式，是只读还是可编辑。在编辑器的编辑模式下，通常会把 cursor 设置成 “工” 的图形，
+     * 这个只需要一行 css 代码就能解决
      *
-     * @return
+     * @return Point2D 计算好的提示弹窗显示的坐标(屏幕坐标)
      */
-    private Pair<Double, Double> computeAutoCompletePopupCoordinate() {
+    private Point2D computeAutoCompletePopupCoordinate() {
         TextAreaSkin skin = (TextAreaSkin) writeSqlArea.getSkin();
+//        javafx.geometry.Bounds是JavaFX中用于表示几何形状边界的类,它提供了各种构造函数和方法来处理和操作边界,以及获取点位置的方法
         Bounds caretBounds = skin.getCaretBounds();
+//        获取caretBounds边界的右下角X轴坐标
+        double caretMaxX = caretBounds.getMaxX();
+//        获取caretBounds边界的右下角Y轴坐标
+        double caretMaxY = caretBounds.getMaxY();
+
 //        将本地坐标(即TextArea内的0,0坐标)转换为场景坐标
         Point2D point2D = writeSqlArea.localToScene(0.0, 0.0);
 //        获取窗口对象
         Window window = writeSqlArea.getScene().getWindow();
         double fontSize = writeSqlArea.getFont().getSize();
-//        sql提示弹窗坐标X位置为 窗口的x坐标值+(TextArea原点)所在的场景的x坐标值+光标移动的X值
-        double anchorX = window.getX() + point2D.getX() + caretBounds.getMaxX();
-//        sql提示弹窗坐标Y位置为 窗口的Y坐标值+(TextArea原点)所在的场景的Y坐标值+光标移动的Y值+字体尺寸+冗余值(避免弹窗盖住TextArea中文字)
-        double anchorY = window.getY() + point2D.getY() + caretBounds.getMaxY() + fontSize + 20;
-        return Pair.of(anchorX, anchorY);
+//        sql提示弹窗坐标X位置为:窗口的x坐标值+(TextArea原点)所在的场景的x坐标值+当前光标的X值
+        double anchorX = window.getX() + point2D.getX() + caretMaxX;
+//        sql提示弹窗坐标Y位置为:窗口的Y坐标值+(TextArea原点)所在的场景的Y坐标值+当前光标的Y值+字体尺寸+冗余值(避免弹窗盖住TextArea中的文字)
+        double anchorY = window.getY() + point2D.getY() + caretMaxY + fontSize + 20;
+
+        return new Point2D(anchorX, anchorY);
     }
 
 
     /**
      * 得到当前的sql内容
+     * 需要考虑只执行选中部分的sql情况
+     * 如一个输入框存在多条SQL,只执行选中的部分
+     *
+     * @param select 是否只执行选中的SQL
+     * @return
+     */
+    public String getCurrentSql(boolean select) {
+        if (select) {
+//            获取选中部分的SQL
+            return writeSqlArea.getSelectedText();
+        }
+        return writeSqlArea.getText();
+    }
+
+
+    /**
+     * 快捷键
+     */
+    private EventHandler<KeyEvent> createShortcutKey() {
+        EventHandler<KeyEvent> keyEventEventHandler = new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent event) {
+                if (event.isAltDown() && event.getCode() == KeyCode.SLASH) {
+                    log.debug("TextArea 区域  Alt + / 同时按下,将触发sql提示");
+//                    todo
+                    return;
+                }
+                if (event.isControlDown() && event.getCode() == KeyCode.R) {
+                    log.debug("TextArea 区域 Ctrl + Space 同时按下,将运行当前查询窗口的SQL语句");
+                    String currentSql = getCurrentSql(false);
+//                    todo
+                    return;
+                }
+                if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.R) {
+                    log.debug("TextArea 区域 Ctrl + Space 同时按下,将运行当前查询窗口选中的SQL语句");
+                    String currentSql = getCurrentSql(true);
+//                    todo
+                    return;
+                }
+                if (event.isControlDown() && event.getCode() == KeyCode.D) {
+                    log.debug("TextArea 区域 Ctrl + D 同时按下,将光标所在行的内容复制到下一行,如果存在字符被选中,则只复制选中字符,到选中字符状态的末尾");
+                    String selectedText = writeSqlArea.getSelectedText();
+//                    选中的字符非空
+                    if (StringUtils.isNotBlank(selectedText)) {
+                        IndexRange selection = writeSqlArea.getSelection();
+                        int endIndex = selection.getEnd();
+                        writeSqlArea.insertText(endIndex, selectedText);
+                        return;
+                    }
+//                    未选中字符的情况
+                    Pair<Integer, Integer> caretPositionLineRange = getCaretPositionLineRange();
+                    Integer lineStartIndex = caretPositionLineRange.getLeft();
+                    Integer lineEndIndex = caretPositionLineRange.getRight();
+//                    获取到了光标所在行的内容
+                    String caretPositionLineContent = writeSqlArea.getText(lineStartIndex, lineEndIndex);
+                    writeSqlArea.insertText(lineEndIndex, "\n" + caretPositionLineContent);
+
+                }
+            }
+        };
+        return keyEventEventHandler;
+    }
+
+    /**
+     * 获取光标所在行的索引范围
+     * 具体做法是以当前光标索引为起点,向前向后遍历
+     * 只到遇到换行符或到字符结尾或字符开头
      *
      * @return
      */
-    public String getCurrentSql() {
-        return writeSqlArea.getText();
+    private Pair<Integer, Integer> getCaretPositionLineRange() {
+//        先获取光标的索引位置
+        int caretPosition = writeSqlArea.getCaretPosition();
+//        向前遍历
+        Integer lineStartIndex = caretPosition;
+        while (lineStartIndex > 0) {
+            String text = writeSqlArea.getText(lineStartIndex - 1, lineStartIndex);
+            if (text.equals("\n")) {
+                break;
+            }
+            lineStartIndex = lineStartIndex - 1;
+        }
+//        向后遍历
+        Integer lineEndIndex = caretPosition;
+        while (lineEndIndex < writeSqlArea.getText().length()) {
+            String text = writeSqlArea.getText(lineEndIndex, lineEndIndex + 1);
+            if (text.equals("\n")) {
+                break;
+            }
+            lineEndIndex = lineEndIndex + 1;
+        }
+        log.debug("光标所在行的索引范围是:[{}-{}]", lineStartIndex, lineEndIndex);
+        return Pair.of(lineStartIndex, lineEndIndex);
     }
 
 }

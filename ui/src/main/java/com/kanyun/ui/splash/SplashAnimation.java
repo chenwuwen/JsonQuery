@@ -33,7 +33,7 @@ public class SplashAnimation {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         PathTransition pathTransition = new PathTransition(duration, path, trackBall);
         pathTransition.setOnFinished(event -> {
-            log.warn("=====过场动画执行结束=====");
+            log.debug("=====过场动画执行结束=====");
 //            多线程同步锁计数器-1
             Constant.SCENE_SWITCH_FLAG.countDown();
 //            Pane root = (Pane) canvas.getParent();
