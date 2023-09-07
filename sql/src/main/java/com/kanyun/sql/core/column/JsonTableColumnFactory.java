@@ -88,7 +88,7 @@ public class JsonTableColumnFactory {
     }
 
     /**
-     * 添加字符信息
+     * 添加表的字段信息
      *
      * @param schemaName
      * @param tableName
@@ -96,14 +96,17 @@ public class JsonTableColumnFactory {
      * @throws SQLException
      */
     public static void addTableColumnInfo(String schemaName, String tableName, List<JsonTableColumn> jsonTableColumnList) {
-        String insertSql = "insert into `field_info` (`schema`,`table`,`name`,`type`) values";
+        String insertSql = "insert into `field_info` (`schema`,`table`,`name`,`type`,`default_value`) values";
         StringJoiner valuesJoiner = new StringJoiner(",");
-        String valueTmp = "('%s','%s','%s','%s')";
+        String valueTmp = "('%s','%s','%s','%s','%s')";
         for (JsonTableColumn jsonTableColumn : jsonTableColumnList) {
-            String value = String.format(valueTmp, schemaName, tableName, jsonTableColumn.getName(), jsonTableColumn.getType().toCode());
+            String value = String.format(valueTmp, schemaName, tableName,
+                    jsonTableColumn.getName(), jsonTableColumn.getType().toCode(),
+                    jsonTableColumn.getDefaultValue());
             valuesJoiner.add(value);
         }
-        insertSql = insertSql + valuesJoiner.toString();
+//        拼接SQL
+        insertSql = insertSql + valuesJoiner;
         try {
             H2Utils.executeSql(insertSql);
         } catch (SQLException exception) {
@@ -126,6 +129,7 @@ public class JsonTableColumnFactory {
             JsonTableColumn jsonTableColumn = new JsonTableColumn();
             jsonTableColumn.setName(resultSet.getString("name"));
             jsonTableColumn.setType(ColumnType.getColumnTypeByCode(resultSet.getString("type")));
+            jsonTableColumn.setDefaultValue(resultSet.getString("default_value"));
             columnInfos.add(jsonTableColumn);
         }
         resultSet.close();
@@ -152,6 +156,7 @@ public class JsonTableColumnFactory {
                 String type = resultSet.getString("type");
                 jsonTableColumn.setType(ColumnType.getColumnTypeByCode(type));
                 jsonTableColumn.setName(resultSet.getString("name"));
+                jsonTableColumn.setDefaultValue(resultSet.getString("default_value"));
                 jsonTableColumnList.add(jsonTableColumn);
             }
             resultSet.close();
@@ -193,6 +198,7 @@ public class JsonTableColumnFactory {
             }
             List<JsonTableColumn> tableColumnFromJsonFile = null;
             try {
+//                解析文件获取字段信息
                 tableColumnFromJsonFile = analysisJsonTableColumn.getTableColumnFromJsonFile();
                 addTableColumnInfo(schemaName, tableName, tableColumnFromJsonFile);
             } catch (Exception e) {

@@ -5,10 +5,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.kanyun.sql.core.column.ColumnType;
 import com.kanyun.sql.core.column.JsonTableColumn;
 import com.kanyun.sql.core.column.JsonTableColumnFactory;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -112,12 +115,66 @@ public class JsonEnumerator implements Enumerator<Object[]> {
         Map<String, Object> fixRowData = new LinkedHashMap<>();
         for (JsonTableColumn jsonTableColumn : tableColumnInfoList) {
             if (currentRowData.containsKey(jsonTableColumn.getName())) {
-                fixRowData.put(jsonTableColumn.getName(), currentRowData.get(jsonTableColumn.getName()));
+//                json元素中包含字段,判断字段值是否为空,为空则设置为配置的字段默认值
+                fixRowData.put(jsonTableColumn.getName(), currentRowData.get(jsonTableColumn.getName()) == null ? getColumnDefaultValue(jsonTableColumn) :  currentRowData.get(jsonTableColumn.getName()));
             } else {
-//               todo json元素中未包含的字段先赋值为NULL,也可以为每个字段配置默认值,在此处设置字段配置的默认值
-                fixRowData.put(jsonTableColumn.getName(), null);
+//               json元素中未包含的字段 赋值为配置的字段默认值(未配置则为NULL)
+                fixRowData.put(jsonTableColumn.getName(), getColumnDefaultValue(jsonTableColumn));
             }
         }
         return fixRowData;
+    }
+
+    /**
+     * 获取字符默认值
+     *
+     * @param jsonTableColumn
+     * @return
+     */
+    private Object getColumnDefaultValue(JsonTableColumn jsonTableColumn) {
+        String errorMsgTmp = "模式:%s -> 表:%s -> 字段:%s 类型与设定的字段默认值类型不一致";
+        if (jsonTableColumn.getDefaultValue() == null) return null;
+        if (jsonTableColumn.getDefaultValue().equals("NULL")) {
+            return null;
+        }
+        if (jsonTableColumn.getDefaultValue().equals("EMPTY STRING")) {
+            return "";
+        }
+
+        if (jsonTableColumn.getType() == ColumnType.BIGINT) {
+            if (NumberUtils.isDigits(jsonTableColumn.getDefaultValue())) {
+                return NumberUtils.createLong(jsonTableColumn.getDefaultValue());
+            }
+            throw new IllegalArgumentException(String.format(errorMsgTmp, schema, table, jsonTableColumn.getName()));
+        }
+
+        if (jsonTableColumn.getType() == ColumnType.INTEGER) {
+            if (NumberUtils.isDigits(jsonTableColumn.getDefaultValue())) {
+                return NumberUtils.createInteger(jsonTableColumn.getDefaultValue());
+            }
+            throw new IllegalArgumentException(String.format(errorMsgTmp, schema, table, jsonTableColumn.getName()));
+        }
+        if (jsonTableColumn.getType() == ColumnType.FLOAT) {
+            if (NumberUtils.isDigits(jsonTableColumn.getDefaultValue())) {
+                return NumberUtils.createFloat(jsonTableColumn.getDefaultValue());
+            }
+            throw new IllegalArgumentException(String.format(errorMsgTmp, schema, table, jsonTableColumn.getName()));
+        }
+        if (jsonTableColumn.getType() == ColumnType.DOUBLE) {
+            if (NumberUtils.isDigits(jsonTableColumn.getDefaultValue())) {
+                return NumberUtils.createDouble(jsonTableColumn.getDefaultValue());
+            }
+            throw new IllegalArgumentException(String.format(errorMsgTmp, schema, table, jsonTableColumn.getName()));
+        }
+
+        if (jsonTableColumn.getType() == ColumnType.BOOLEAN) {
+            try {
+                return Boolean.valueOf(jsonTableColumn.getDefaultValue());
+            } catch (Exception e) {
+                throw new IllegalArgumentException(String.format(errorMsgTmp, schema, table, jsonTableColumn.getName()));
+            }
+        }
+
+        return jsonTableColumn.getDefaultValue();
     }
 }

@@ -46,3 +46,21 @@
     -fx-text-fill: #0a0a0a;
     /*-fx-text-fill: transparent;*/
 }
+
+.table-row-cell:empty {
+    /*不显示空行,空行背景色透明*/
+    -fx-background-color: transparent;
+}
+.table-view{
+    -fx-background-color: #f9f9f9;
+    -fx-border-width: 0px;
+    /*点击tableview的边框颜色,默认是蓝色*/
+    -fx-border-color: transparent;
+    -fx-margin: 0px;
+}
+
+/*.tab{*/
+    /*设置tab标题与边框的距离*/
+    /*-fx-padding: 2px,2px,2px,2px;*/
+/*}*/
+

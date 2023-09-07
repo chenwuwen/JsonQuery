@@ -9,7 +9,7 @@ import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
 
 /**
  * 异步初始化
@@ -23,7 +23,7 @@ public class AsyncInitializer implements Runnable {
     /**
      * 过渡场景(旧场景)
      */
-    private Stage splashStage;
+    private final Stage splashStage;
 
     public AsyncInitializer(Stage splashStage) {
         this.splashStage = splashStage;
@@ -36,11 +36,7 @@ public class AsyncInitializer implements Runnable {
 //            初始化应用配置
             jsonQuery.initConfig();
             Scene mainScene = InterfaceInitializer.initializeMainScene();
-//            使用JFoenix SVG Loader 加载字体,使用SVGGlyph前需要先加载字体,有提供加载的多个方法,主要作用是向SVGGlyphLoader类的glyphsMap变量赋值
-//            参数1:svg字体输入流 参数2:图标名称前缀(当加载多个字体,且多个字体存在一个同名的图标,因此添加前缀加以区分,取字体时使用SVGGlyphLoader.getGlyph("前缀"+"名称"))
-            SVGGlyphLoader.loadGlyphsFont(this.getClass().getResourceAsStream("/fonts/icomoon.svg"),
-                    "icomoon");
-            log.debug("字体加载完毕:{}", SVGGlyphLoader.getAllGlyphsIDs());
+            loadAllGlyphsFont();
 //            阻塞,需要等待动画播放完毕再切换场景
             Constant.SCENE_SWITCH_FLAG.await();
             log.info("过渡页动画播放完毕,准备切换到主场景");
@@ -64,7 +60,7 @@ public class AsyncInitializer implements Runnable {
      * @param mainScene 主Scene
      */
     private void switchScene(Scene mainScene) {
-        log.info("当前切换场景的线程是否是Fx线程：", Platform.isFxApplicationThread());
+        log.info("当前切换场景的线程是否是Fx线程：{}", Platform.isFxApplicationThread());
 //        切换场景需要注意：如果前一个场景跟当前场景使用同一个Stage时,后一个场景的左上角坐标会与第一个场景的左上角坐标重叠,这样当前后
 //        两个场景的大小不一致时,会导致后一个场景的窗口不居中,此时可以使用Stage.centerOnScreen()方法使窗口居中,但是这样在切换场景
 //        后会存在一个窗口移动的问题,同时也可以先将窗口隐藏(Stage.hide()),再设置居中,再设置窗口显示(Stage.show()),这样存在一个窗口
@@ -82,5 +78,20 @@ public class AsyncInitializer implements Runnable {
         mainStage.show();
         splashStage.close();
         mainStage.setOnCloseRequest(request -> Platform.exit());
+    }
+
+    /**
+     * 加载全部的SVG图形字体,同时初始化IconProperties,UI界面需要使用图标,从IconProperties中获取图标名称{@link IconProperties}
+     * 使用JFoenix SVG Loader 加载字体,使用SVGGlyph前需要先加载字体,有提供加载的多个方法,
+     * 主要作用是向SVGGlyphLoader类的glyphsMap变量赋值
+     * svg 下载网站 (https://icomoon.io/app/#/select) account: rawzez@mvcgd.com/icomoon.io
+     * 导出方式: 生成字体(选择svg)
+     */
+    private void loadAllGlyphsFont() throws IOException {
+//       参数1:svg字体输入流
+//       参数2:图标名称前缀(当加载多个字体,且多个字体存在一个同名的图标,因此添加前缀加以区分,取字体时使用SVGGlyphLoader.getGlyph("前缀"+"名称"))
+        SVGGlyphLoader.loadGlyphsFont(this.getClass().getResourceAsStream("/fonts/icomoon.svg"),
+                IconProperties.getIconNamePrefix());
+        log.debug("全部字体加载完毕:{}", SVGGlyphLoader.getAllGlyphsIDs());
     }
 }

@@ -2,6 +2,7 @@ package com.kanyun.ui.tabs;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Background;
@@ -26,7 +27,10 @@ import org.controlsfx.control.StatusBar;
  */
 public interface TabKind {
 
-
+    /**
+     * tab 图标尺寸
+     */
+    Double TAB_GRAPHIC_SIZE = 18.0;
 
     /**
      * 获取Tab页类型枚举
@@ -53,6 +57,12 @@ public interface TabKind {
      * 监听相应的事件,来更改statusBar的显示内容
      */
     void addStatusBarEventListener();
+
+    /**
+     * 获取Tab图标
+     * @return
+     */
+    Node getTabGraphic();
 
 
     default void statusBarInit() {

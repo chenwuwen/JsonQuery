@@ -1,11 +1,14 @@
 package com.kanyun.ui.components;
 
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXSnackbar;
+import com.jfoenix.controls.JFXSnackbarLayout;
 import com.jfoenix.svg.SVGGlyph;
 import com.jfoenix.svg.SVGGlyphLoader;
 import com.kanyun.sql.core.column.ColumnType;
 import com.kanyun.sql.core.column.JsonTableColumn;
 import com.kanyun.sql.core.column.JsonTableColumnFactory;
+import com.kanyun.ui.IconProperties;
 import com.kanyun.ui.model.TableMetaData;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -32,7 +35,7 @@ import java.util.stream.Collectors;
 public class TableColumnActionBar extends HBox {
     private static final Logger log = LoggerFactory.getLogger(TableColumnActionBar.class);
 
-    private static final int ICON_SIZE = 19;
+    private static final int ICON_SIZE = 13;
 
     /**
      * 表字段信息Table
@@ -60,20 +63,21 @@ public class TableColumnActionBar extends HBox {
      * 检查表Tab,字段操作工具条
      */
     private void addTableFieldActions() {
+        Color color = Color.GRAY;
 
-//        icomoon为图标的自定义前缀,其在加载字体时设置.
-        JFXButton saveFieldBtn = new JFXButton("保存", createGlyph("icomoon.floppy-o, save"));
+//      (icomoon.floppy-o, save) icomoon为图标的自定义前缀,其在加载字体时设置.
+        JFXButton saveFieldBtn = new JFXButton("保存", IconProperties.getIcon("field.inspect.save", ICON_SIZE, color));
 //        分割线(同一个组件对象只能添加一次)
         Separator separator0 = new Separator(Orientation.VERTICAL);
         Separator separator1 = new Separator(Orientation.VERTICAL);
         Separator separator2 = new Separator(Orientation.VERTICAL);
 
-        JFXButton addFieldBtn = new JFXButton("添加字段");
-        JFXButton delFieldBtn = new JFXButton("移除字段");
-        JFXButton istFieldBtn = new JFXButton("插入字段");
-        JFXButton moveUpFieldBtn = new JFXButton("上移字段", createGlyph("icomoon.long-arrow-down"));
-        JFXButton moveDownFieldBtn = new JFXButton("下移字段", createGlyph("icomoon.long-arrow-up"));
-        JFXButton reGenerateFieldBtn = new JFXButton("重生成字段", createGlyph("icomoon.repeat, rotate-right"));
+        JFXButton addFieldBtn = new JFXButton("添加字段", IconProperties.getIcon("field.inspect.add_field", ICON_SIZE, color));
+        JFXButton delFieldBtn = new JFXButton("移除字段", IconProperties.getIcon("field.inspect.remove_field", ICON_SIZE, color));
+        JFXButton istFieldBtn = new JFXButton("插入字段", IconProperties.getIcon("field.inspect.insert_field", ICON_SIZE, color));
+        JFXButton moveUpFieldBtn = new JFXButton("上移字段", IconProperties.getIcon("field.inspect.move_up", ICON_SIZE, color));
+        JFXButton moveDownFieldBtn = new JFXButton("下移字段", IconProperties.getIcon("field.inspect.move_down", ICON_SIZE, color));
+        JFXButton reGenerateFieldBtn = new JFXButton("重生成字段", IconProperties.getIcon("field.inspect.regenerate", ICON_SIZE, color));
 //        工具栏添加子元素
         getChildren().addAll(saveFieldBtn, separator0, addFieldBtn, delFieldBtn, istFieldBtn, separator1, moveUpFieldBtn, moveDownFieldBtn, separator2, reGenerateFieldBtn);
         addFieldBtn.setOnAction(event -> {
@@ -87,6 +91,7 @@ public class TableColumnActionBar extends HBox {
                         .map(item -> {
                             JsonTableColumn jsonTableColumn = new JsonTableColumn();
                             jsonTableColumn.setName(item.getColumnName());
+                            jsonTableColumn.setDefaultValue(item.getColumnDefaultValue());
                             jsonTableColumn.setType(ColumnType.getColumnTypeByCode(item.getColumnType()));
                             return jsonTableColumn;
                         }).collect(Collectors.toList());
@@ -161,34 +166,23 @@ public class TableColumnActionBar extends HBox {
         });
     }
 
-    /**
-     * 创建按钮需要用到的图标
-     * 需要注意的是,当自己想要的图标获取为空时,最好看看图标名是否正确,因为图标名可能包含空格或其他符号
-     * 这里使用JFoenix的SVGGlyphLoader来加载图标,可以加载多个字体,不同字体的同名图标,可以在加载字体时
-     * 设置前缀,这里在传递图标名称时,也需要带上图标前缀
-     *
-     * @param glyphName 图标名称 注意图标名称可能包含空格等特殊符号,当无法获取图标时,请再三验证图标名称是否正确
-     * @return
-     */
-    private Node createGlyph(String glyphName) {
-
-        SVGGlyph btnGlyph = SVGGlyphLoader.getGlyph(glyphName);
-        btnGlyph.setFill(Color.GRAY);
-        btnGlyph.setSize(ICON_SIZE, ICON_SIZE);
-        return btnGlyph;
-    }
 
     /**
      * 字段保存成功提示
      */
     private void showSuccessMsg() {
-        Notifications notificationBuilder = Notifications.create()
-                .text("保存成功")
-                .hideAfter(Duration.seconds(2))
-                .position(Pos.CENTER)
-//                通知数超过阈值时折叠所有通知为一个通知,0为禁用阈值
-                .threshold(3, Notifications.create().title("Threshold Notification"));
-        notificationBuilder.showInformation();
+//        Notifications notificationBuilder = Notifications.create()
+//                .text("保存成功")
+//                .hideAfter(Duration.seconds(2))
+//                .position(Pos.CENTER)
+////                通知数超过阈值时折叠所有通知为一个通知,0为禁用阈值
+//                .threshold(3, Notifications.create().title("Threshold Notification"));
+//        notificationBuilder.showInformation();
+
+        JFXSnackbar snackbar = new JFXSnackbar(this);
+        snackbar.setPrefWidth(300);
+        snackbar.fireEvent(new JFXSnackbar.SnackbarEvent(new JFXSnackbarLayout("Toast Message " )));
+
     }
 
     /**

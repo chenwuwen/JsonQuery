@@ -54,6 +54,7 @@ public class ContentPane extends TabPane {
             log.debug("ContentPane 接收到新建查询事件,准备开启Tab页");
             Tab queryTab = new Tab("新的查询");
             TabQueryPane tabQueryPane = new TabQueryPane();
+            queryTab.setGraphic(tabQueryPane.getTabGraphic());
             queryTab.setContent(tabQueryPane);
             getTabs().add(queryTab);
             getSelectionModel().select(queryTab);
@@ -66,12 +67,14 @@ public class ContentPane extends TabPane {
             log.debug("ContentPane 接收到数据页,先确定是哪张表,然后开启tab页");
             String tabName = event.getTableModel().getTableName() + " @" + event.getTableModel().getSchemaName();
             Tab tableTab = new Tab(tabName);
-            FontAwesomeIconView fontAwesomeIcon
-                    = new FontAwesomeIconView(FontAwesomeIcon.TABLE);
-            fontAwesomeIcon.setFill(Color.BLUE);
-            tableTab.setGraphic(fontAwesomeIcon);
+//            FontAwesome方式创建图标
+//            FontAwesomeIconView fontAwesomeIcon
+//                    = new FontAwesomeIconView(FontAwesomeIcon.TABLE);
+//            fontAwesomeIcon.setFill(Color.BLUE);
+
             try {
                 TabQueryTablePane tabQueryTablePane = new TabQueryTablePane(event.getTableModel());
+                tableTab.setGraphic(tabQueryTablePane.getTabGraphic());
                 tableTab.setContent(tabQueryTablePane);
                 getTabs().add(tableTab);
                 getSelectionModel().select(tableTab);
@@ -105,6 +108,7 @@ public class ContentPane extends TabPane {
             Tab tableInspectTab = new Tab(tabName);
             try {
                 TabInspectTablePane tabInspectTablePane = new TabInspectTablePane(event.getTableModel());
+                tableInspectTab.setGraphic(tabInspectTablePane.getTabGraphic());
                 tableInspectTab.setContent(tabInspectTablePane);
                 getTabs().add(tableInspectTab);
                 getSelectionModel().select(tableInspectTab);
@@ -164,6 +168,7 @@ public class ContentPane extends TabPane {
                 Node content = newValue.getContent();
                 TabKind tabKind = (TabKind) content;
                 TabKindEnum kind = tabKind.getTabKind();
+//                发射动态设置信息栏事件,每个Tab都持有一个StatusBar的引用
                 UserEvent userEvent = new UserEvent(UserEvent.DYNAMIC_SETTING_STATUS_BAR);
                 if (kind == TabKindEnum.INSPECT_TAB) {
 

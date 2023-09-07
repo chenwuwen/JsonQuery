@@ -14,6 +14,10 @@ public class JsonTableColumn implements Serializable {
      * 字段类型
      */
     private ColumnType type;
+    /**
+     * 字段默认值
+     */
+    private String defaultValue;
 
     public String getName() {
         return name;
@@ -29,5 +33,13 @@ public class JsonTableColumn implements Serializable {
 
     public void setType(ColumnType type) {
         this.type = type;
+    }
+
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
     }
 }

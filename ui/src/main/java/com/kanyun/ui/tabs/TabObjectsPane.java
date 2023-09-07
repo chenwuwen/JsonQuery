@@ -176,5 +176,10 @@ public class TabObjectsPane extends VBox implements TabKind {
         });
     }
 
+    @Override
+    public Node getTabGraphic() {
+        return null;
+    }
+
 
 }

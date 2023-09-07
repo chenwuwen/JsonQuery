@@ -73,7 +73,7 @@ public abstract class ReGenerateTableFieldDialog {
                 if (!JsonParser.parseString(json).isJsonObject()) {
                     setMessage("数据不是JsonObject类型");
                     hasErrors.set(true);
-                }else {
+                } else {
                     hasErrors.set(false);
                 }
             }
@@ -95,7 +95,9 @@ public abstract class ReGenerateTableFieldDialog {
                 List<TableMetaData> collect = jsonTableColumnList.stream().map(jsonTableColumn -> {
                     return TableMetaData.newBuilder(schema, table)
                             .setColumnName(jsonTableColumn.getName())
-                            .setColumnType(jsonTableColumn.getType().toCode()).builder();
+                            .setColumnType(jsonTableColumn.getType().toCode())
+                            .setColumnDefaultValue(null)
+                            .builder();
                 }).collect(Collectors.toList());
                 handlerResult(FXCollections.observableList(collect));
                 alert.close();
@@ -109,6 +111,7 @@ public abstract class ReGenerateTableFieldDialog {
 
     /**
      * 处理Json解析后的结果,由子类实现
+     *
      * @param tableMetaDataObservableList 包含表名,schema名,字段名及字段类型
      */
     abstract public void handlerResult(ObservableList<TableMetaData> tableMetaDataObservableList);

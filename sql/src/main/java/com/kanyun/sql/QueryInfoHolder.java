@@ -33,6 +33,14 @@ public class QueryInfoHolder {
         QUERY_INFO.get().put("count", count);
     }
 
+    /**
+     * 设置执行的SQL
+     * @param sql
+     */
+    public static void setExecuteSql(String sql) {
+        QUERY_INFO.get().put("sql", sql);
+    }
+
     public static Map<String, Object> getQueryInfo() {
         return QUERY_INFO.get();
     }

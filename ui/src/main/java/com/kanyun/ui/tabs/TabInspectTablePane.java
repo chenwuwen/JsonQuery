@@ -1,8 +1,5 @@
 package com.kanyun.ui.tabs;
 
-import com.jfoenix.controls.JFXButton;
-import com.jfoenix.svg.SVGGlyph;
-import com.jfoenix.svg.SVGGlyphLoader;
 import com.kanyun.sql.core.column.ColumnType;
 import com.kanyun.sql.core.column.JsonTableColumn;
 import com.kanyun.sql.core.column.JsonTableColumnFactory;
@@ -11,17 +8,11 @@ import com.kanyun.ui.model.TableMetaData;
 import com.kanyun.ui.model.TableModel;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
-import javafx.geometry.Orientation;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.Separator;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.layout.HBox;
+import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import org.apache.commons.lang3.StringUtils;
+import javafx.util.Callback;
+import javafx.util.StringConverter;
 import org.controlsfx.control.StatusBar;
 import org.controlsfx.control.tableview2.TableColumn2;
 import org.controlsfx.control.tableview2.TableView2;
@@ -31,6 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -61,7 +56,7 @@ public class TabInspectTablePane extends VBox implements TabKind {
         log.debug("检查表页面被新建,[{}.{}] 被打开", tableModel.getSchemaName(), tableModel.getTableName());
         TabPane tabPane = new TabPane();
         Tab fieldTab = createFieldTab(tableModel);
-        TableColumnActionBar toolBar = new TableColumnActionBar(metaInfoTableView,tableModel.getSchemaName(), tableModel.getTableName());
+        TableColumnActionBar toolBar = new TableColumnActionBar(metaInfoTableView, tableModel.getSchemaName(), tableModel.getTableName());
         tabPane.getTabs().add(fieldTab);
         statusBarInit();
         getChildren().addAll(toolBar, tabPane);
@@ -86,6 +81,7 @@ public class TabInspectTablePane extends VBox implements TabKind {
 
         final TableColumn2<TableMetaData, String> columnNameField = new TableColumn2<>("名称");
         final TableColumn2<TableMetaData, String> columnTypeField = new TableColumn2<>("类型");
+        final TableColumn2<TableMetaData, String> columnDefaultValueField = new TableColumn2<>("默认值");
 
         columnNameField.setCellValueFactory(meta -> meta.getValue().columnNameProperty());
 //        由于未设置该列的cellFactory属性,因此即使该列设置为允许编辑,也无法进行编辑
@@ -93,19 +89,27 @@ public class TabInspectTablePane extends VBox implements TabKind {
         columnNameField.setCellFactory(TextField2TableCell.forTableColumn());
         columnNameField.setPrefWidth(200);
 
+//        设置字段类型的值
         columnTypeField.setCellValueFactory(meta -> meta.getValue().columnTypeProperty());
 //        设置此列单元格格式为下拉框
         columnTypeField.setCellFactory(ComboBox2TableCell.forTableColumn(ColumnType.codes()));
 //        设置列可编辑
         columnTypeField.setEditable(true);
-        columnTypeField.setPrefWidth(150);
+        columnTypeField.setPrefWidth(100);
 
-        metaInfoTableView.getColumns().setAll(columnNameField, columnTypeField);
+        String[] defaultValueItems = {"", "EMPTY STRING", "NULL"};
+        Callback<TableColumn<Object, String>, TableCell<Object, String>> columnDefaultValueCellCallback = ComboBox2TableCell.forTableColumn(defaultValueItems);
+        columnDefaultValueField.setCellFactory(ComboBox2TableCell.forTableColumn(defaultValueItems));
+        columnDefaultValueField.setPrefWidth(100);
+        columnDefaultValueField.setCellValueFactory(meta -> meta.getValue().columnDefaultValueProperty());
+
+        metaInfoTableView.getColumns().addAll(columnNameField, columnTypeField, columnDefaultValueField);
 
         List<JsonTableColumn> tableColumnInfoList = JsonTableColumnFactory.getTableColumnInfoList(new File(tableModel.getPath()), tableModel.getSchemaName(), tableModel.getTableName());
         List<TableMetaData> collect = tableColumnInfoList.stream().map(jsonTableColumn -> {
             return TableMetaData.newBuilder(tableModel.getSchemaName(), tableModel.getTableName())
                     .setColumnName(jsonTableColumn.getName())
+                    .setColumnDefaultValue(jsonTableColumn.getDefaultValue())
                     .setColumnType(jsonTableColumn.getType().toCode()).builder();
         }).collect(Collectors.toList());
 //        设置tableView的数据
@@ -137,6 +141,11 @@ public class TabInspectTablePane extends VBox implements TabKind {
     @Override
     public void addStatusBarEventListener() {
 
+    }
+
+    @Override
+    public Node getTabGraphic() {
+        return null;
     }
 
 }

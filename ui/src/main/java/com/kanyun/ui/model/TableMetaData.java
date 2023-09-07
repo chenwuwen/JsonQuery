@@ -1,9 +1,6 @@
 package com.kanyun.ui.model;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
 
 /**
  * 数据库表的元信息
@@ -24,6 +21,11 @@ public class TableMetaData {
      * 字段类型
      */
     private final StringProperty columnType = new SimpleStringProperty();
+    /**
+     * 字段默认值
+     */
+    private final StringProperty columnDefaultValue = new SimpleStringProperty();
+
 
     /**
      * 是否是索引
@@ -82,14 +84,28 @@ public class TableMetaData {
         this.index.set(index);
     }
 
-    public static Builder newBuilder(String schemaName,String tableName) {
+    public String getColumnDefaultValue() {
+        return columnDefaultValue.get();
+    }
+
+    public StringProperty columnDefaultValueProperty() {
+        return columnDefaultValue;
+    }
+
+    public void setColumnDefaultValue(String columnDefaultValue) {
+        this.columnDefaultValue.set(columnDefaultValue);
+    }
+
+    public static Builder newBuilder(String schemaName, String tableName) {
         return new Builder(schemaName, tableName);
     }
+
     public static final class Builder {
         private final String schemaName;
         private final String tableName;
         private String columnName;
         private String columnType;
+        private String columnDefaultValue;
 
         private Builder(String schemaName, String tableName) {
             this.tableName = tableName;
@@ -105,13 +121,17 @@ public class TableMetaData {
             this.columnType = columnType;
             return this;
         }
-
+        public Builder setColumnDefaultValue(String columnDefaultValue) {
+            this.columnDefaultValue = columnDefaultValue;
+            return this;
+        }
         public TableMetaData builder() {
             TableMetaData tableMetaData = new TableMetaData();
             tableMetaData.setTable(tableName);
             tableMetaData.setSchema(schemaName);
             tableMetaData.setColumnName(columnName);
             tableMetaData.setColumnType(columnType);
+            tableMetaData.setColumnDefaultValue(columnDefaultValue);
             return tableMetaData;
         }
     }

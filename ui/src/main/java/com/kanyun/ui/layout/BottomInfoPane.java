@@ -46,11 +46,11 @@ public class BottomInfoPane extends HBox {
      */
     private SimpleDoubleProperty parentWidthProperty = new SimpleDoubleProperty();
     /**
-     * DataBase侧状态组件
+     * DataBase侧状态组件(左侧)
      */
     private StatusBar dataBaseInfoStatusBar;
     /**
-     * 动态信息显示组件
+     * 动态信息显示组件(右侧,size自动铺满)
      */
     private StackPane dynamicInfoPane;
 
@@ -58,16 +58,15 @@ public class BottomInfoPane extends HBox {
         setId("BottomInfoPane");
         setPrefHeight(30);
         setAlignment(Pos.CENTER_LEFT);
-//        设置节点之间的间距
+//        设置子节点之间的间距
         setSpacing(0);
-//        getChildren().addAll(createDataBaseInfo(), createDynamicInfo());
         dynamicInfoPane = new StackPane();
 
         getChildren().addAll(createDataBaseInfo(), dynamicInfoPane);
-//      Hgrow是 horizontal grow缩写意为水平增长，在这里是水平增长沾满窗口
-//        HBox.setHgrow(dataBaseInfoStatusBar, Priority.ALWAYS);
+//      Hgrow是 horizontal grow缩写意为水平增长，在这里是水平增长占满窗口
 //        这里只设置一个组件为动态增长,另一个组件则手动设置值(通过监听器),如果设置两个组件都水平增长,则单独给组件设置宽度值是没有效果的
         HBox.setHgrow(dynamicInfoPane, Priority.ALWAYS);
+        HBox.setHgrow(dataBaseInfoStatusBar, Priority.NEVER);
         widthProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
@@ -77,16 +76,7 @@ public class BottomInfoPane extends HBox {
                 parentWidthProperty.set(newValue.doubleValue());
             }
         });
-
-        addEventHandler(UserEvent.DYNAMIC_SETTING_STATUS_BAR, event -> {
-            StatusBar statusBar = event.getStatusBar();
-            if (dynamicInfoPane.getChildren().size() < 1) {
-                dynamicInfoPane.getChildren().add(statusBar);
-            } else {
-                dynamicInfoPane.getChildren().set(0, statusBar);
-            }
-        });
-
+        dynamicSettingInformationBar();
     }
 
     /**
@@ -134,11 +124,27 @@ public class BottomInfoPane extends HBox {
      * 同时由于设置了左侧信息栏的最大宽度属性,因此需要加以判断
      * 宽度+3 是因为分割线的像素稍多几个
      * 如果后面更改了 SplitPane的分割线的样式(宽度) 将更新此值
+     *
      * @param pos 比例
      */
     public void setDataBaseInfoStatusBarWith(Double pos) {
         dataBaseInfoStatusBar.setPrefWidth(parentWidthProperty.get() * pos > Constant.DATABASE_TREE_PANE_MAX_WIDTH
                 ? Constant.DATABASE_TREE_PANE_MAX_WIDTH + 3 : parentWidthProperty.get() * pos);
+    }
+
+    /**
+     * 动态设置信息栏(底部右侧信息栏)监听
+     */
+    private void dynamicSettingInformationBar() {
+//        监听自定义设置动态信息栏事件,用于设置动态信息栏显示内容,切换Content Tab时发射事件
+        addEventHandler(UserEvent.DYNAMIC_SETTING_STATUS_BAR, event -> {
+            StatusBar statusBar = event.getStatusBar();
+            if (dynamicInfoPane.getChildren().size() < 1) {
+                dynamicInfoPane.getChildren().add(statusBar);
+            } else {
+                dynamicInfoPane.getChildren().set(0, statusBar);
+            }
+        });
     }
 
 

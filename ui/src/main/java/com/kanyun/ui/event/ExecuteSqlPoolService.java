@@ -3,15 +3,19 @@ package com.kanyun.ui.event;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.kanyun.sql.QueryInfoHolder;
 import com.kanyun.sql.SqlExecutor;
+import com.kanyun.ui.tabs.TabKind;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * 多线程异步执行
@@ -43,7 +47,7 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
     /**
      * 多条SQL的查询信息
      */
-    private Map<String, Object> queryInfoCollection = new LinkedHashMap<>();
+    private Map<String, Map<String,Object>> queryInfoCollection = new LinkedHashMap<>();
 
 
     /**
@@ -57,6 +61,12 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
      */
     private List<String> sqlList = new LinkedList<>();
 
+    /**
+     * 总耗时,从创建任务到任务完成的耗时
+     * 单位:秒
+     */
+    private String totalCost;
+
 
     public ExecuteSqlPoolService setModelJson(String modelJson) {
         this.modelJson = modelJson;
@@ -69,17 +79,32 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
     }
 
     public ExecuteSqlPoolService addSql(String sql) {
-        sqlList.add(sql);
+        if (StringUtils.isNotBlank(sql)) {
+//            去除SQL首位空格和换行符
+            sql = sql.trim();
+            sqlList.add(sql);
+        }
         return this;
     }
 
     public ExecuteSqlPoolService addAllSql(Collection<String> sqls) {
-        sqlList.addAll(sqls);
+        for (String sql : sqls) {
+            addSql(sql);
+        }
         return this;
+    }
+
+    public List<String> getSqlList() {
+        return sqlList;
+    }
+
+    public Map<String, Map<String,Object>> getQueryInfoCollection() {
+        return queryInfoCollection;
     }
 
     @Override
     protected Task<Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>>> createTask() {
+        long startTime = System.currentTimeMillis();
         Task<Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>>> executeSqlTasks = new Task<Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>>>() {
             @Override
             protected Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>> call() throws Exception {
@@ -95,7 +120,7 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
                         public Pair<Map<String, Integer>, List<Map<String, Object>>> call() throws Exception {
 //                            调用SQL执行器获取结果
                             Pair<Map<String, Integer>, List<Map<String, Object>>> result = SqlExecutor.execute(modelJson, defaultSchema, sql);
-//                            调用完成后,将线程变量设置到查询信息集合中
+//                            调用完成后,将线程变量设置到查询信息集合中(由于不同SQL查询时间不一致,因此该集合的顺序,可能跟SQL执行的顺序不一致,虽然是并行,但先执行的不一定先结束)
                             queryInfoCollection.put(sql, QueryInfoHolder.getQueryInfo());
                             return result;
                         }
@@ -103,18 +128,37 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
 //                    将SQL与future一一对应,放到future集合中
                     futures.put(sql, future);
                 }
-//                清空待执行的SQL集合
-                sqlList.clear();
-//                遍历所有的future取出结果
+
+//                遍历所有的future取出结果(阻塞方法)
                 for (Map.Entry<String, Future<Pair<Map<String, Integer>, List<Map<String, Object>>>>> futureEntity : futures.entrySet()) {
                     String sql = futureEntity.getKey();
-                    Pair<Map<String, Integer>, List<Map<String, Object>>> sqlResult = futureEntity.getValue().get();
+                    Future<Pair<Map<String, Integer>, List<Map<String, Object>>>> future = futureEntity.getValue();
+                    Pair<Map<String, Integer>, List<Map<String, Object>>> sqlResult = future.get();
                     queryResultCollection.put(sql, sqlResult);
                 }
+//                说明异步任务执行完毕
+                sortQueryInfoCollection();
+//                清空待执行的SQL集合
+                sqlList.clear();
+                String cost = TabKind.getSecondForMilliSecond(System.currentTimeMillis() - startTime);
+                totalCost = cost;
                 return queryResultCollection;
             }
         };
+
+
         return executeSqlTasks;
+    }
+
+    /**
+     * 对查询信息集合按照SQL的执行顺序(虽然SQL是并行执行的,但是SQL的书写是有顺序的,也即先开始的不一定先结束)进行排序
+     */
+    private void sortQueryInfoCollection() {
+        Map<String, Map<String, Object>> sortQueryInfoCollection = new LinkedHashMap<>();
+        for (String sql : sqlList) {
+            sortQueryInfoCollection.put(sql, queryInfoCollection.get(sql));
+        }
+        queryInfoCollection = sortQueryInfoCollection;
     }
 
 
@@ -135,5 +179,9 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
     protected void failed() {
         super.failed();
         log.error("异步SQL执行任务异常:", super.getException());
+    }
+
+    public String getTotalCost() {
+        return totalCost;
     }
 }

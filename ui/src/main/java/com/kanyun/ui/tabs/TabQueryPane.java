@@ -2,6 +2,7 @@ package com.kanyun.ui.tabs;
 
 import com.jfoenix.controls.JFXButton;
 import com.kanyun.sql.core.ModelJson;
+import com.kanyun.ui.IconProperties;
 import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.components.SqlComponent;
 import com.kanyun.ui.event.StatusBarProgressTask;
@@ -17,6 +18,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 
 /**
  * 新建查询Tab
+ * 不包含分页组件
  */
 public class TabQueryPane extends VBox implements TabKind {
     private static final Logger log = LoggerFactory.getLogger(TabQueryPane.class);
@@ -57,11 +60,6 @@ public class TabQueryPane extends VBox implements TabKind {
      * 动态信息栏
      */
     private StatusBar dynamicInfoStatusBar;
-
-    /**
-     * 动态信息属性
-     */
-    private SimpleStringProperty dynamicInfoProperty = new SimpleStringProperty();
 
     /**
      * 运行SQL按钮
@@ -101,12 +99,17 @@ public class TabQueryPane extends VBox implements TabKind {
         toolBar.setSpacing(10);
         toolBar.setPadding(new Insets(5, 0, 5, 2));
         initToolBar(toolBar);
+        createDynamicInfoStatusBar();
 //        初始化SQL组件
-        sqlComponent = new SqlComponent(currentSchema);
+        sqlComponent = new SqlComponent(currentSchema) {
+            @Override
+            public StatusBar getDynamicStatusBar() {
+                return dynamicInfoStatusBar;
+            }
+        };
 //        设置SQL子组件总是填充剩余空间
         VBox.setVgrow(sqlComponent, Priority.ALWAYS);
         getChildren().addAll(toolBar, sqlComponent);
-        createDynamicInfoStatusBar();
     }
 
     /**
@@ -167,6 +170,7 @@ public class TabQueryPane extends VBox implements TabKind {
 
     /**
      * 发射事件(底部信息栏查询语句展示及执行进度和执行时间展示)和执行SQL
+     *
      * @param sql
      */
     private void fireEventAndExecuteSQL(String sql) {
@@ -282,7 +286,6 @@ public class TabQueryPane extends VBox implements TabKind {
         dynamicInfoStatusBar = new StatusBar();
 //        不设置的话,默认有个OK字样
         dynamicInfoStatusBar.setText("");
-        dynamicInfoStatusBar.textProperty().bind(dynamicInfoProperty);
         addStatusBarEventListener();
     }
 
@@ -294,11 +297,11 @@ public class TabQueryPane extends VBox implements TabKind {
     @Override
     public void addStatusBarEventListener() {
         addEventHandler(UserEvent.EXECUTE_SQL, event -> {
-//            去掉SQL中的换行符
-            String sql = event.getSql().replaceAll("\r|\n|\t", "");
-            log.debug("设置动态SQL信息:[{}]", sql);
+//            去掉SQL中的换行符和多余的空格(\s 可以匹配空格、制表符、换页符等空白字符的其中任意一个,\s+ 表示一个及以上)
+            String sql = event.getSql().replaceAll("\\s+", " ");
+            log.debug("设置动态信息栏执行的SQL(去除空格/换行等字符):[{}]", sql);
 //            执行SQL时,设置动态信息栏的SQL信息,同时移除动态信息栏右侧的子项(同一个窗口多次执行的情况)
-            dynamicInfoProperty.set(sql);
+            dynamicInfoStatusBar.setText(sql);
             dynamicInfoStatusBar.getRightItems().removeAll(dynamicInfoStatusBar.getRightItems());
 //            开启进度条
             startSqlExecuteProgressTask();
@@ -325,6 +328,13 @@ public class TabQueryPane extends VBox implements TabKind {
 
         });
 
+        addEventHandler(UserEvent.EXECUTE_MULTI_SQL_COMPLETE, event -> {
+            log.debug("接收到多条SQL执行完成事件,准备停止进度条");
+//            关闭进度条
+            stopSqlExecuteProgressTask();
+            controlButtonEnableOrDisable(true);
+        });
+
         addEventHandler(UserEvent.EXECUTE_SQL_FAIL, event -> {
             controlButtonEnableOrDisable(true);
             stopSqlExecuteProgressTask();
@@ -332,6 +342,11 @@ public class TabQueryPane extends VBox implements TabKind {
             sqlExecuteErrDialog.setTitle("SQL执行失败");
             sqlExecuteErrDialog.show();
         });
+    }
+
+    @Override
+    public Node getTabGraphic() {
+        return IconProperties.getIcon("tab.query", TAB_GRAPHIC_SIZE, Color.BLUE);
     }
 
 
@@ -350,7 +365,7 @@ public class TabQueryPane extends VBox implements TabKind {
      */
     public void stopSqlExecuteProgressTask() {
         statusBarProgressTask.stopProgress();
-//        属性解绑
+//        执行进度属性解绑
         dynamicInfoStatusBar.progressProperty().unbind();
     }
 

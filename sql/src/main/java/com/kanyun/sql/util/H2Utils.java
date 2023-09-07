@@ -29,7 +29,7 @@ public class H2Utils {
             + "AUTO_SERVER=TRUE"; //启动自动混合模式，允许开启多个连接，该参数不支持在内存中运行模式
 
     private static final String INITIALIZATION_SQL = "CREATE TABLE IF NOT EXISTS " +
-            "field_info(`schema` VARCHAR,`table` VARCHAR, `name` VARCHAR, `type` VARCHAR)";
+            "field_info(`schema` VARCHAR,`table` VARCHAR, `name` VARCHAR, `type` VARCHAR, `default_value` VARCHAR)";
     private static Connection connection;
 
     static {

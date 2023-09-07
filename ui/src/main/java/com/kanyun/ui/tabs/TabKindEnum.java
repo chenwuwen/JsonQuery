@@ -7,7 +7,7 @@ public enum TabKindEnum {
     OBJECT_TAB("对象Tab页"), SQL_TAB("SQL查询TAB页"), TABLE_TAB("表数据Tab页"), INSPECT_TAB("表字段Tab页");
 
     /**
-     * Tab页种类描述
+     * Tab页类型描述
      */
     private String describe;
 

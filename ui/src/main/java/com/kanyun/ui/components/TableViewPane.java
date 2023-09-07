@@ -5,6 +5,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
@@ -27,7 +28,10 @@ public class TableViewPane extends StackPane {
 //        tableView设置数据(构造方法传入),也可以先初始化TableView 然后再设置数据  tableView.setItems(data);
         tableView = new TableView<>();
         getChildren().add(tableView);
+        configTableView();
     }
+
+
 
     /**
      * 设置表个内容
@@ -92,5 +96,26 @@ public class TableViewPane extends StackPane {
         tableView.getItems().removeAll(tableView.getItems());
     }
 
+    /**
+     * 配置TableView
+     */
+    private void configTableView() {
+        tableView.setRowFactory(new Callback<TableView<Map<String, Object>>, TableRow<Map<String, Object>>>() {
+            @Override
+            public TableRow<Map<String, Object>> call(TableView<Map<String, Object>> param) {
+                return new TableRow<Map<String, Object>>(){
+                    @Override
+                    protected void updateItem(Map<String, Object> item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty) {
+//                            空行不显示样式
+                            setStyle("-fx-background-color: transparent;-fx-border-width: 0;-fx-border-color: transparent;");
+                        }
+                    }
+                };
+            }
+        });
+
+    }
 
 }

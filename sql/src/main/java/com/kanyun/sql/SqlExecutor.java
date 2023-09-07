@@ -155,8 +155,9 @@ public class SqlExecutor {
         QueryInfoHolder.setQueryCost(stopWatch.getTime(TimeUnit.MILLISECONDS));
 //       设置线程变量:得到当前行号,也就是记录数,注意resultSet.getFetchSize()方法不是获得记录数,而是获得每次抓取的记录数,默认是0,也就是说不限制,可以用setFetchSize()来设置
         QueryInfoHolder.setRecordCount(statisticsResultOfCount(resultSet, recordCount));
-
+        QueryInfoHolder.setExecuteSql(sql);
         resultSet.close();
+        statement.close();
         return executeResult;
     }
 

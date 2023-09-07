@@ -1,7 +1,10 @@
 package com.kanyun.ui.event;
 
+import com.kanyun.ui.components.SqlComponent;
 import com.kanyun.ui.model.DataBaseModel;
 import com.kanyun.ui.model.TableModel;
+import com.kanyun.ui.tabs.TabObjectsPane;
+import com.kanyun.ui.tabs.TabQueryPane;
 import javafx.event.Event;
 import javafx.event.EventType;
 import org.controlsfx.control.StatusBar;
@@ -38,6 +41,9 @@ public class UserEvent extends Event {
      */
     private StatusBar statusBar;
 
+    /**
+     * 错误信息
+     */
     private Throwable exception;
 
     public static final EventType<UserEvent> ANY = new EventType<>(Event.ANY, "ANY");
@@ -93,6 +99,12 @@ public class UserEvent extends Event {
     public static final EventType<UserEvent> EXECUTE_SQL_COMPLETE = new EventType<>(ANY, "EXECUTE_SQL_COMPLETE");
 
     /**
+     * 多条SQL执行完成事件
+     * {@link TabQueryPane#addStatusBarEventListener()}
+     */
+    public static final EventType<UserEvent> EXECUTE_MULTI_SQL_COMPLETE = new EventType<>(ANY, "EXECUTE_MULTI_SQL_COMPLETE");
+
+    /**
      * SQL执行失败事件
      */
     public static final EventType<UserEvent> EXECUTE_SQL_FAIL = new EventType<>(ANY, "EXECUTE_SQL_FAIL");
@@ -104,11 +116,13 @@ public class UserEvent extends Event {
 
     /**
      * 显示Objects事件
+     * {@link TabObjectsPane#TabObjectsPane()}
      */
     public static final EventType<UserEvent> SHOW_OBJECTS = new EventType<>(ANY, "SHOW_OBJECTS");
 
     /**
      * 动态设置Statusbar事件
+     * {@link com.kanyun.ui.layout.BottomInfoPane#dynamicSettingInformationBar()}
      */
     public static final EventType<UserEvent> DYNAMIC_SETTING_STATUS_BAR = new EventType<>(ANY, "DYNAMIC_SETTING_STATUS_BAR");
 
