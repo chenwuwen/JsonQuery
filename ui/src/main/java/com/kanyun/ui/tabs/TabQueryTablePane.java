@@ -5,12 +5,15 @@ import com.kanyun.ui.IconProperties;
 import com.kanyun.ui.components.SimplicityPaginationToolBar;
 import com.kanyun.ui.components.TableViewPane;
 import com.kanyun.ui.event.ExecuteSqlService;
+import com.kanyun.ui.event.SimpleSqlExecuteTask;
 import com.kanyun.ui.event.StatusBarProgressTask;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.model.TableModel;
 import com.sun.javafx.event.EventUtil;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -21,6 +24,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
@@ -29,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,19 +41,34 @@ import java.util.concurrent.Executors;
  * 表全量数据Tab
  * 包含分页组件
  */
-public class TabQueryTablePane extends VBox implements TabKind {
+public class TabQueryTablePane extends AbstractTab {
 
     private static final Logger log = LoggerFactory.getLogger(TabQueryTablePane.class);
 
     /**
-     * SQL模板
+     * SQL分页查询模板
      */
-    private static final String SQL_TEMPLATE = "SELECT * FROM %s LIMIT %d OFFSET %d ";
+    private static final String SQL_ROW_PAGE_TEMPLATE = "SELECT * FROM %s LIMIT %d OFFSET %d ";
+
+    /**
+     * SQL查询模板
+     */
+    private static final String SQL_ROW_ALL_TEMPLATE = "SELECT * FROM %s ";
+
+    /**
+     * SQL行总数模板
+     */
+    private static final String SQL_ROW_COUNT_TEMPLATE = "SELECT count(*) AS rowCount FROM %s ";
 
     /**
      * 动态信息栏
      */
     private StatusBar dynamicInfoStatusBar;
+
+    /**
+     * 表数据总行数,并设置初始值为-1,表示未获取过当前表的总记录数
+     */
+    private SimpleIntegerProperty rowCount = new SimpleIntegerProperty(-1);
 
     /**
      * 异步SQL执行Service
@@ -72,8 +92,12 @@ public class TabQueryTablePane extends VBox implements TabKind {
 
     /**
      * 动态信息属性
+     * 初始化放在 {@link this#createDynamicInfoStatusBar()}
+     * 因为子类在实例化时会先调用父类的构造方法,而此时该成员变量尚未初始化,
+     * 由于父类的构造方法调用了子类的{@link this#createDynamicInfoStatusBar()}
+     * 因此初始化放在 {@link this#createDynamicInfoStatusBar()}
      */
-    private SimpleStringProperty dynamicInfoProperty = new SimpleStringProperty();
+    private SimpleStringProperty dynamicInfoProperty;
 
     /**
      * 当前Tab页所属的表信息
@@ -86,7 +110,6 @@ public class TabQueryTablePane extends VBox implements TabKind {
         try {
             executeSqlService = new ExecuteSqlService();
             paginationToolBar = new SimplicityPaginationToolBar(this);
-            createDynamicInfoStatusBar();
             this.tableModel = tableModel;
             queryTable(tableModel);
             addAsyncTaskListener();
@@ -95,13 +118,6 @@ public class TabQueryTablePane extends VBox implements TabKind {
             log.error("打开表异常：", exception);
             throw exception;
         }
-    }
-
-    /**
-     * 空的构造方法,由子类集成{@link SimplicityPaginationToolBar}用以获取实例
-     * 外部不能调用
-     */
-    public TabQueryTablePane() {
     }
 
 
@@ -116,7 +132,7 @@ public class TabQueryTablePane extends VBox implements TabKind {
     private void queryTable(TableModel tableModel) {
         String defaultSchema = tableModel.getSchemaName();
         String modelJson = ModelJson.getModelJson(defaultSchema);
-        String sql = generateSql(tableModel);
+        String sql = generateRowListSql(tableModel);
         UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
         userEvent.setSql(sql);
 //        SQL执行事件,自己发送,自己接收
@@ -126,19 +142,54 @@ public class TabQueryTablePane extends VBox implements TabKind {
     }
 
     /**
-     * 生成SQL
+     * 查询表记录数
+     *
+     * @param tableModel
+     */
+    private Long queryRowCount(TableModel tableModel) {
+        String defaultSchema = tableModel.getSchemaName();
+        String modelJson = ModelJson.getModelJson(defaultSchema);
+        String sql = generateRowCountSql(tableModel);
+        SimpleSqlExecuteTask simpleSqlExecuteTask = new SimpleSqlExecuteTask(modelJson, defaultSchema, sql);
+        Executors.newFixedThreadPool(1).execute(simpleSqlExecuteTask);
+        while (!simpleSqlExecuteTask.isDone()) {
+            try {
+                Pair<Map<String, Integer>, List<Map<String, Object>>> pair = simpleSqlExecuteTask.get();
+                Object rowCount = pair.getRight().get(0).get("rowCount");
+                return Long.parseLong(rowCount.toString());
+            } catch (Exception e) {
+                log.error("获取表:{}总记录数报错", defaultSchema + "." + tableModel.getTableName(), e);
+            }
+        }
+        return 0L;
+    }
+
+    /**
+     * 生成表行查询SQL
      *
      * @param tableModel
      * @return
      */
-    private String generateSql(TableModel tableModel) {
+    private String generateRowListSql(TableModel tableModel) {
 //        获取表名(schema+table)
         String tableName = tableModel.getSchemaName() + "." + tableModel.getTableName();
 //        获取分页信息,并计算offset的值
         Integer currentPage = paginationToolBar.getCurrentPage();
         Integer limit = paginationToolBar.getPageLimit();
         Integer offset = (currentPage - 1) * limit;
-        return String.format(SQL_TEMPLATE, tableName, limit, offset);
+        return String.format(SQL_ROW_PAGE_TEMPLATE, tableName, limit, offset);
+    }
+
+    /**
+     * 生成表行总数查询SQL
+     *
+     * @param tableModel
+     * @return
+     */
+    private String generateRowCountSql(TableModel tableModel) {
+//        获取表名(schema+table)
+        String tableName = tableModel.getSchemaName() + "." + tableModel.getTableName();
+        return String.format(SQL_ROW_COUNT_TEMPLATE, tableName);
     }
 
     public TableColumn getTableColumn(String columnLabel, Integer columnType) {
@@ -177,8 +228,8 @@ public class TabQueryTablePane extends VBox implements TabKind {
         dynamicInfoStatusBar = new StatusBar();
 //        不设置的话,默认有个OK字样
         dynamicInfoStatusBar.setText("");
+        dynamicInfoProperty = new SimpleStringProperty();
         dynamicInfoStatusBar.textProperty().bind(dynamicInfoProperty);
-        addStatusBarEventListener();
     }
 
     @Override
@@ -189,21 +240,17 @@ public class TabQueryTablePane extends VBox implements TabKind {
     @Override
     public void addStatusBarEventListener() {
         addEventHandler(UserEvent.EXECUTE_SQL, event -> {
-//            去掉SQL中的换行符
-            String sql = event.getSql().replaceAll("\r|\n|\t", "");
-            log.debug("设置动态SQL信息:[{}]", sql);
-            dynamicInfoProperty.set(sql);
+            log.debug("设置动态信息栏执行的SQL:[{}]", event.getSql());
+            dynamicInfoProperty.set(event.getSql());
 //            开启进度条
             startSqlExecuteProgressTask();
         });
 
         addEventHandler(UserEvent.EXECUTE_SQL_COMPLETE, event -> {
             log.debug("接收到SQL执行完成事件,准备停止进度条,并设置查询记录数及查询耗时");
-//            这里就不需要再移除动态信息栏右侧的Item了,因为该Tab页不存在重用的情况
-//            dynamicInfoStatusBar.getRightItems().removeAll(dynamicInfoStatusBar.getRightItems());
             Map<String, Object> queryInfo = event.getQueryInfo();
             String cost = "查询耗时：" + TabKind.getSecondForMilliSecond(queryInfo.get("cost")) + "秒";
-            String record = "总记录数：" + queryInfo.get("count");
+            String record = "当前页记录数：" + queryInfo.get("count");
             Label costLabel = TabKind.createCommonLabel(cost, dynamicInfoStatusBar, null, Color.GREEN);
             costLabel.setPrefHeight(dynamicInfoStatusBar.getHeight());
             Label recordLabel = TabKind.createCommonLabel(record, dynamicInfoStatusBar, null, Color.GREEN);
@@ -242,9 +289,9 @@ public class TabQueryTablePane extends VBox implements TabKind {
         tableViewPane.setTableColumns(columnInfos);
 //       设置table行数据
         tableViewPane.setTableRows(FXCollections.observableList(data));
-        if (getChildren().size() ==  2) {
+        if (getChildren().size() == 2) {
             getChildren().set(0, tableViewPane);
-        }else {
+        } else {
             getChildren().addAll(tableViewPane, paginationToolBar);
         }
 
@@ -256,10 +303,10 @@ public class TabQueryTablePane extends VBox implements TabKind {
     public void addAsyncTaskListener() {
 //        异步任务成功执行监听
         executeSqlService.setOnSucceeded(event -> {
+            Object sqlResult = event.getSource().getValue();
+            Pair<Map<String, Integer>, List<Map<String, Object>>> result = (Pair<Map<String, Integer>, List<Map<String, Object>>>) sqlResult;
             stopSqlExecuteProgressTask();
-            Object tableData = event.getSource().getValue();
-            Pair<Map<String, Integer>, List<Map<String, Object>>> result = (Pair<Map<String, Integer>, List<Map<String, Object>>>) tableData;
-//            发送SQL执行完成事件
+//                发送SQL执行完成事件
             UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_COMPLETE);
             userEvent.setQueryInfo(executeSqlService.getQueryInfo());
             EventUtil.fireEvent(this, userEvent);
@@ -295,7 +342,7 @@ public class TabQueryTablePane extends VBox implements TabKind {
      */
     public void stopSqlExecuteProgressTask() {
         statusBarProgressTask.stopProgress();
-//        属性解绑
+//        SQL执行进度属性解绑
         dynamicInfoStatusBar.progressProperty().unbind();
     }
 
@@ -322,8 +369,18 @@ public class TabQueryTablePane extends VBox implements TabKind {
 
     /**
      * 跳转到最后一页
+     * 分为三步
+     * 第一步:查询总记录数
+     * 第二步:根据总记录数和当前设置的每页显示数确定总分页数
+     * 第三步:跳转到最后一页
      */
-    public void lastedPage() {
+    public void lastedPage(SimpleStringProperty currentPageProperty) {
+        Long totalCount = queryRowCount(tableModel);
+        long totalPage = (totalCount + paginationToolBar.getPageLimit() - 1) / paginationToolBar.getPageLimit();
+        log.info("获取到当前表:{} 总记录数:{},设置的每页显示数:{},计算得到分页总数:{}",
+                tableModel.getSchemaName() + "." + tableModel.getTableName(), totalCount, paginationToolBar.getPageLimit(), totalPage);
+//        修改分页组件当前页码显示值
+        currentPageProperty.set(String.valueOf(totalPage));
         queryTable(tableModel);
     }
 
@@ -332,6 +389,21 @@ public class TabQueryTablePane extends VBox implements TabKind {
      */
     public void customPage() {
         queryTable(tableModel);
+    }
+
+    /**
+     * 显示全部行数据
+     */
+    public void allRow() {
+        String defaultSchema = tableModel.getSchemaName();
+        String modelJson = ModelJson.getModelJson(defaultSchema);
+        String sql = String.format(SQL_ROW_ALL_TEMPLATE, defaultSchema + "." + tableModel.getTableName());
+        UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL);
+        userEvent.setSql(sql);
+//        SQL执行事件,自己发送,自己接收
+        EventUtil.fireEvent(this, userEvent);
+        executeSqlService.setSql(sql).setDefaultSchema(defaultSchema).setModelJson(modelJson);
+        executeSqlService.start();
     }
 }
 

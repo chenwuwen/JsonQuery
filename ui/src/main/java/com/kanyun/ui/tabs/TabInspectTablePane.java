@@ -10,9 +10,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 import javafx.util.Callback;
-import javafx.util.StringConverter;
 import org.controlsfx.control.StatusBar;
 import org.controlsfx.control.tableview2.TableColumn2;
 import org.controlsfx.control.tableview2.TableView2;
@@ -22,17 +20,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * 检查表Tab
  */
-public class TabInspectTablePane extends VBox implements TabKind {
+public class TabInspectTablePane extends AbstractTab {
 
     private static final Logger log = LoggerFactory.getLogger(TabInspectTablePane.class);
 
@@ -43,8 +37,12 @@ public class TabInspectTablePane extends VBox implements TabKind {
 
     /**
      * 动态信息属性
+     * 初始化放在 {@link this#createDynamicInfoStatusBar()}
+     * 因为子类在实例化时会先调用父类的构造方法,而此时该成员变量尚未初始化,
+     * 由于父类的构造方法调用了子类的{@link this#createDynamicInfoStatusBar()}
+     * 因此初始化放在 {@link this#createDynamicInfoStatusBar()}
      */
-    private SimpleStringProperty dynamicInfoProperty = new SimpleStringProperty();
+    private SimpleStringProperty dynamicInfoProperty;
 
     /**
      * 表字段信息Table
@@ -58,7 +56,6 @@ public class TabInspectTablePane extends VBox implements TabKind {
         Tab fieldTab = createFieldTab(tableModel);
         TableColumnActionBar toolBar = new TableColumnActionBar(metaInfoTableView, tableModel.getSchemaName(), tableModel.getTableName());
         tabPane.getTabs().add(fieldTab);
-        statusBarInit();
         getChildren().addAll(toolBar, tabPane);
     }
 
@@ -130,6 +127,7 @@ public class TabInspectTablePane extends VBox implements TabKind {
         dynamicInfoStatusBar = new StatusBar();
 //        不设置的话,默认有个OK字样
         dynamicInfoStatusBar.setText("");
+        dynamicInfoProperty = new SimpleStringProperty();
         dynamicInfoStatusBar.textProperty().bind(dynamicInfoProperty);
     }
 

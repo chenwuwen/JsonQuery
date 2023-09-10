@@ -65,6 +65,9 @@ public interface TabKind {
     Node getTabGraphic();
 
 
+    /**
+     * 动态信息栏初始化
+     */
     default void statusBarInit() {
         createDynamicInfoStatusBar();
         addStatusBarEventListener();

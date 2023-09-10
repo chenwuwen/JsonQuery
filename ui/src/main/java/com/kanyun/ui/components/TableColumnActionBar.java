@@ -17,7 +17,9 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Separator;
+import javafx.scene.control.ToolBar;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import org.apache.commons.lang3.StringUtils;
@@ -30,9 +32,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 检查表标签页的工具栏
+ * 检查表标签页的工具栏,继承自ToolBar
  */
-public class TableColumnActionBar extends HBox {
+public class TableColumnActionBar extends ToolBar {
     private static final Logger log = LoggerFactory.getLogger(TableColumnActionBar.class);
 
     private static final int ICON_SIZE = 13;
@@ -79,7 +81,7 @@ public class TableColumnActionBar extends HBox {
         JFXButton moveDownFieldBtn = new JFXButton("下移字段", IconProperties.getIcon("field.inspect.move_down", ICON_SIZE, color));
         JFXButton reGenerateFieldBtn = new JFXButton("重生成字段", IconProperties.getIcon("field.inspect.regenerate", ICON_SIZE, color));
 //        工具栏添加子元素
-        getChildren().addAll(saveFieldBtn, separator0, addFieldBtn, delFieldBtn, istFieldBtn, separator1, moveUpFieldBtn, moveDownFieldBtn, separator2, reGenerateFieldBtn);
+        getItems().addAll(saveFieldBtn, separator0, addFieldBtn, delFieldBtn, istFieldBtn, separator1, moveUpFieldBtn, moveDownFieldBtn, separator2, reGenerateFieldBtn);
         addFieldBtn.setOnAction(event -> {
             metaInfoTableView.getItems().add(new TableMetaData());
         });
@@ -179,7 +181,7 @@ public class TableColumnActionBar extends HBox {
 //                .threshold(3, Notifications.create().title("Threshold Notification"));
 //        notificationBuilder.showInformation();
 
-        JFXSnackbar snackbar = new JFXSnackbar(this);
+        JFXSnackbar snackbar = new JFXSnackbar((Pane)this.getParent());
         snackbar.setPrefWidth(300);
         snackbar.fireEvent(new JFXSnackbar.SnackbarEvent(new JFXSnackbarLayout("Toast Message " )));
 

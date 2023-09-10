@@ -64,3 +64,32 @@
     /*-fx-padding: 2px,2px,2px,2px;*/
 /*}*/
 
+/*.split-menu-button .arrow-button {*/
+/*    -fx-background-color: transparent ;*/
+/*    -fx-border-width: 0;*/
+
+/*}*/
+/*.split-menu-button .menu-button {*/
+/*    -fx-background-color: transparent;*/
+/*    -fx-border-width: 0;*/
+/*}*/
+
+/*.split-menu-button .menu-button .label {*/
+/*    -fx-background-color: transparent;*/
+/*}*/
+
+/*.split-menu-button .menu{*/
+/*    -fx-background-color: blue;*/
+/*}*/
+
+/*.split-menu-button .menu-item {*/
+/*    -fx-background-color: blue;*/
+/*}*/
+
+/*.split-menu-button .button {*/
+/*    -fx-background-color: blue;*/
+/*}*/
+
+/*.split-menu-button .menu-bar {*/
+/*    -fx-background-color: blue;*/
+/*}*/

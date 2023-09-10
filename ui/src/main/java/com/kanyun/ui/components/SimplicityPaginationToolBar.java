@@ -1,19 +1,20 @@
 package com.kanyun.ui.components;
 
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXCheckBox;
 import com.kanyun.ui.IconProperties;
 import com.kanyun.ui.tabs.TabQueryTablePane;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
-import javafx.scene.Group;
 import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /**
  * 自定义分页工具栏
  */
-public class SimplicityPaginationToolBar extends HBox {
+public class SimplicityPaginationToolBar extends ToolBar {
     private static final Logger log = LoggerFactory.getLogger(SimplicityPaginationToolBar.class);
 
     private static final Double ICON_SIZE = 10.0;
@@ -36,6 +37,7 @@ public class SimplicityPaginationToolBar extends HBox {
      * 每页显示数据条数
      */
     private static final Long PAGE_LIMIT = 10L;
+    private static final double PAGE_OPERATE_WIDTH = 30;
 
     /**
      * 当前页码属性
@@ -45,23 +47,23 @@ public class SimplicityPaginationToolBar extends HBox {
     /**
      * 设置分页按钮
      */
-    private JFXButton settingPageButton;
+    private Button settingPageButton;
     /**
      * 最后一页按钮
      */
-    private JFXButton lastedPageButton;
+    private Button lastedPageButton;
     /**
      * 下一页按钮
      */
-    private JFXButton nextPageButton;
+    private Button nextPageButton;
     /**
      * 上一页按钮
      */
-    private JFXButton previousPageButton;
+    private Button previousPageButton;
     /**
      * 第一页按钮
      */
-    private JFXButton firstPageButton;
+    private Button firstPageButton;
     /**
      * 当前页(可编辑,可随动) TextField#textProperty() 一旦绑定了定义的property {@link currentPageProperty}
      * 则TextField#setText()方法将失效
@@ -74,14 +76,14 @@ public class SimplicityPaginationToolBar extends HBox {
     private TextField pageLimitTextField;
 
     /**
-     * 分页组件
+     * 分页组件组
      */
-    private Node paginationOptNode;
+    private ObservableList<Node> paginationNodeList;
 
     /**
-     * 分页设置组件
+     * 分页设置组件组
      */
-    private Node paginationSetNode;
+    private ObservableList<Node> paginationSetNodeList ;
 
 
     /**
@@ -93,47 +95,79 @@ public class SimplicityPaginationToolBar extends HBox {
     public SimplicityPaginationToolBar(TabQueryTablePane table) {
         setId("SimplicityPaginationToolBar");
         this.table = table;
-        setPrefHeight(8);
+//        设置组件排列方向由右向左(注意是Node类的方法[节点方向描述了节点内的视觉数据流]),而节点方向默认为跟从父类方向,因此子元素若想正常显示需要重新手动设置
+        setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         setPadding(new Insets(0, 0, 0, 0));
-//        设置对齐方式从右向左
-        setAlignment(Pos.BASELINE_RIGHT);
         settingPageButton = new JFXButton(null, IconProperties.getIcon("pagination.setting", ICON_SIZE, Color.GRAY));
-        paginationOptNode = buildPaginationNode();
-        paginationSetNode = buildLimitNode();
+        buildPaginationNode();
+        buildPaginationSetNode();
+
         addComponentsAction();
-        getChildren().addAll(paginationOptNode, settingPageButton);
+//        添加设置按钮
+        getItems().add(settingPageButton);
+//        添加分页组件按钮组
+        getItems().addAll(paginationNodeList);
+//        由于父类ToolBar设置了元素绘制方向,而当前子元素绘制方向默认为跟从父类方向(NodeOrientation.INHERIT),因此这里需要正确设置绘制方向,避免按钮触发不正确,除非对按钮排列顺序没有要求,或没有歧义的符号误导等要求
+        for (Node node : paginationNodeList) {
+            node.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        }
+
     }
 
 
     /**
      * 构建分页按钮组件
      */
-    private Node buildPaginationNode() {
-        Pane group = createButtonGroup();
+    private void buildPaginationNode() {
+        paginationNodeList = FXCollections.observableArrayList();
         Color color = Color.GRAY;
         lastedPageButton = new JFXButton(null, IconProperties.getIcon("pagination.latest", ICON_SIZE, color));
         nextPageButton = new JFXButton(null, IconProperties.getIcon("pagination.next", ICON_SIZE, color));
         currentPageTextField = new TextField();
         currentPageTextField.setAlignment(Pos.CENTER);
-        currentPageTextField.prefWidthProperty().bind(currentPageTextField.prefHeightProperty());
+        currentPageTextField.setPrefWidth(PAGE_OPERATE_WIDTH);
         currentPageTextField.textProperty().bindBidirectional(currentPageProperty);
         currentPageProperty.set(String.valueOf(1));
         previousPageButton = new JFXButton(null, IconProperties.getIcon("pagination.previous", ICON_SIZE, color));
         firstPageButton = new JFXButton(null, IconProperties.getIcon("pagination.first", ICON_SIZE, color));
-        group.getChildren().addAll(firstPageButton, previousPageButton, currentPageTextField, nextPageButton, lastedPageButton);
-        return group;
+        paginationNodeList.addAll(lastedPageButton,nextPageButton,currentPageTextField,previousPageButton,firstPageButton);
+
     }
 
     /**
      * 构建分页数量组件
      */
-    private Node buildLimitNode() {
-        Pane group = createButtonGroup();
+    private void buildPaginationSetNode() {
+        paginationSetNodeList = FXCollections.observableArrayList();
         pageLimitTextField = new TextField(String.valueOf(PAGE_LIMIT));
+        pageLimitTextField.setPrefWidth(PAGE_OPERATE_WIDTH);
         Label info = new Label("每页显示数量");
-        CheckBox checkBox = new CheckBox("无限制");
-        group.getChildren().addAll(checkBox, pageLimitTextField, info);
-        return group;
+//        勾选为限制数量(即pageLimitTextField的值),不勾选为不限制,默认是限制数量
+        CheckBox checkBox = new CheckBox("限制数量");
+        checkBox.selectedProperty().set(true);
+        checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+//                触发每页无限制复选框时,将当前页码设置为1
+                currentPageProperty.set("1");
+                if (!newValue) {
+                    log.info("当前设置每页显示数量为无限制,将重新查询所有表数据,并隐藏分页按钮,刷新页面.");
+                    for (Node node : paginationNodeList) {
+                        node.setVisible(false);
+                    }
+                    table.allRow();
+                } else {
+                    log.info("当前设置每页显示数量为:{},将重新查询带有分页信息表数据,显示分页按钮,刷新页面.", pageLimitTextField.getText());
+                    for (Node node : paginationNodeList) {
+                        node.setVisible(true);
+                    }
+                    table.firstPage();
+                }
+            }
+        });
+//        paginationSetNodeList.addAll(checkBox, pageLimitTextField, info);
+        paginationSetNodeList.addAll(info, pageLimitTextField,checkBox );
+
     }
 
     /**
@@ -142,7 +176,7 @@ public class SimplicityPaginationToolBar extends HBox {
     private void addComponentsAction() {
         lastedPageButton.setOnAction(event -> {
             log.debug("最后一页按钮被点击");
-            table.lastedPage();
+            table.lastedPage(currentPageProperty);
         });
 
         nextPageButton.setOnAction(event -> {
@@ -168,18 +202,28 @@ public class SimplicityPaginationToolBar extends HBox {
         });
         settingPageButton.setOnAction(event -> {
 //            分页设置按钮主要用来切换显示内容
-            if (getChildren().get(0) == paginationOptNode) {
-                getChildren().set(0, paginationSetNode);
+            if (getItems().containsAll(paginationNodeList)) {
+                getItems().removeAll(paginationNodeList);
+                getItems().addAll(paginationSetNodeList);
             } else {
-                getChildren().set(0, paginationOptNode);
+                getItems().removeAll(paginationSetNodeList);
+                getItems().addAll(paginationNodeList);
             }
         });
-//        监听TextField中设置的值,如果不是数字,设置为旧值,如果开头是0,则设置为旧制
+//        监听TextField中设置的值,如果不是数字,设置为旧值,如果开头是0,则设置为旧值
         currentPageTextField.textProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
                 if (!NumberUtils.isDigits(newValue) || newValue.startsWith("0")) {
                     currentPageTextField.setText(oldValue);
+                }
+            }
+        });
+        pageLimitTextField.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                if (!NumberUtils.isDigits(newValue) || newValue.startsWith("0")) {
+                    pageLimitTextField.setText(oldValue);
                 }
             }
         });
@@ -192,6 +236,15 @@ public class SimplicityPaginationToolBar extends HBox {
                 }
             }
         });
+        pageLimitTextField.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent event) {
+                if (event.getCode() == KeyCode.ENTER) {
+                    table.customPage();
+                }
+            }
+        });
+
     }
 
 
@@ -222,4 +275,6 @@ public class SimplicityPaginationToolBar extends HBox {
         HBox hBox = new HBox();
         return hBox;
     }
+
+
 }

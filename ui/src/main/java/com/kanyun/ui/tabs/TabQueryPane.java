@@ -19,11 +19,9 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.Separator;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -46,7 +44,7 @@ import java.util.stream.Collectors;
  * 新建查询Tab
  * 不包含分页组件
  */
-public class TabQueryPane extends VBox implements TabKind {
+public class TabQueryPane extends AbstractTab {
     private static final Logger log = LoggerFactory.getLogger(TabQueryPane.class);
 
     private static final Integer TOOLBAR_IMG_SIZE = 15;
@@ -64,7 +62,7 @@ public class TabQueryPane extends VBox implements TabKind {
     /**
      * 运行SQL按钮
      */
-    private Button runButton;
+    private MenuButton runButton;
 
     /**
      * 停止SQL运行按钮
@@ -99,7 +97,6 @@ public class TabQueryPane extends VBox implements TabKind {
         toolBar.setSpacing(10);
         toolBar.setPadding(new Insets(5, 0, 5, 2));
         initToolBar(toolBar);
-        createDynamicInfoStatusBar();
 //        初始化SQL组件
         sqlComponent = new SqlComponent(currentSchema) {
             @Override
@@ -139,6 +136,7 @@ public class TabQueryPane extends VBox implements TabKind {
         stopButton = getStopButton();
 //        工具栏添加子元素
         toolBar.getChildren().addAll(dataBaseComboBox, runButton, stopButton, getBeautifyButton());
+
     }
 
 
@@ -147,25 +145,44 @@ public class TabQueryPane extends VBox implements TabKind {
      *
      * @return
      */
-    public Button getRunButton() {
+    public MenuButton getRunButton() {
         FontAwesomeIconView fontAwesomeIcon
                 = new FontAwesomeIconView(FontAwesomeIcon.PLAY);
         fontAwesomeIcon.setFill(Color.GREEN);
-        JFXButton runBtn = new JFXButton("运行", fontAwesomeIcon);
-        ImageView runImageView = new ImageView("/asserts/run.png");
-        runImageView.setFitWidth(TOOLBAR_IMG_SIZE);
-        runImageView.setFitHeight(TOOLBAR_IMG_SIZE);
-        runBtn.setGraphic(runImageView);
+        MenuItem runCurrentStatementItemBtn = new MenuItem("运行当前选中的SQL");
+        SplitMenuButton splitMenuButton = new SplitMenuButton(runCurrentStatementItemBtn);
+        splitMenuButton.setText("运行");
+        splitMenuButton.setGraphic(fontAwesomeIcon);
+        TranslateTransition translateTransition = getTranslateTransition(fontAwesomeIcon);
 
-        TranslateTransition translateTransition = getTranslateTransition(runImageView);
+//        如果设置了SplitMenuButton的setOnMouseReleased()/setOnMousePressed()方法,则setOnAction()不会触发,可以用setOnMouseClicked()方法代替
+//        splitMenuButton.setOnAction(event -> {
+//            currentExecuteSql = sqlComponent.getCurrentSql(false);
+//            if (StringUtils.isEmpty(currentExecuteSql)) return;
+//            fireEventAndExecuteSQL(currentExecuteSql);
+//        });
 
-        runBtn.setOnAction(event -> {
+        splitMenuButton.setOnMouseClicked(event -> {
             currentExecuteSql = sqlComponent.getCurrentSql(false);
             if (StringUtils.isEmpty(currentExecuteSql)) return;
             fireEventAndExecuteSQL(currentExecuteSql);
         });
-        setButtonTransitionAnimation(runBtn, translateTransition);
-        return runBtn;
+
+        runCurrentStatementItemBtn.setOnAction(event -> {
+            currentExecuteSql = sqlComponent.getCurrentSql(true);
+            if (StringUtils.isEmpty(currentExecuteSql)) return;
+            fireEventAndExecuteSQL(currentExecuteSql);
+        });
+
+//        点击空格键显示子菜单
+        splitMenuButton.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.SPACE) {
+                splitMenuButton.show();
+            }
+        });
+
+        setButtonTransitionAnimation(splitMenuButton, translateTransition);
+        return splitMenuButton;
     }
 
     /**
@@ -232,7 +249,7 @@ public class TabQueryPane extends VBox implements TabKind {
      * @param target 移动目标
      * @return
      */
-    private static TranslateTransition getTranslateTransition(ImageView target) {
+    private static TranslateTransition getTranslateTransition(Node target) {
 //        实例化动画类
         TranslateTransition translateTransition = new TranslateTransition();
 //        动画持续时长
@@ -253,7 +270,7 @@ public class TabQueryPane extends VBox implements TabKind {
     /**
      * 设置按钮位移动画
      */
-    private void setButtonTransitionAnimation(Button btn, TranslateTransition translateTransition) {
+    private void setButtonTransitionAnimation(ButtonBase btn, TranslateTransition translateTransition) {
 //        按钮按下事件
         btn.setOnMousePressed(event -> {
 //            执行正向动画
@@ -286,7 +303,6 @@ public class TabQueryPane extends VBox implements TabKind {
         dynamicInfoStatusBar = new StatusBar();
 //        不设置的话,默认有个OK字样
         dynamicInfoStatusBar.setText("");
-        addStatusBarEventListener();
     }
 
     @Override

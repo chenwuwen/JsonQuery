@@ -41,8 +41,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * 新建查询组件(内容区域SQL+结果)
@@ -102,10 +104,13 @@ public abstract class SqlComponent extends SplitPane {
         Platform.runLater(() -> writeSqlArea.requestFocus());
         writeSqlArea.setWrapText(false);
         try {
-            writeSqlArea.setPromptText(Files.asCharSource(
-                   new File(this.getClass().getClassLoader().getResource("sql_prompt.txt").getPath()) ,
+//            从文件中读取每一行数据,并使用系统换行符进行拼接,实现换行效果
+            List<String> promptItemList = Files.asCharSource(
+                    new File(Objects.requireNonNull(this.getClass().getClassLoader().getResource("sql_prompt.txt")).getPath()),
                     StandardCharsets.UTF_8
-            ).read());
+            ).readLines();
+            String promptText = StringUtils.join(promptItemList, System.lineSeparator());
+            writeSqlArea.setPromptText(promptText);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -165,7 +170,7 @@ public abstract class SqlComponent extends SplitPane {
             Object result = event.getSource().getValue();
             Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>> queryResultCollection = (Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>>) result;
             Map<String, Map<String, Object>> queryInfoCollection = executeSqlPoolService.getQueryInfoCollection();
-            log.debug("异步(批量)任务{}成功执行完成,将发射事件给父组件,用以更新动态信息栏",queryInfoCollection.keySet());
+            log.debug("异步(批量)任务{}成功执行完成,将发射事件给父组件,用以更新动态信息栏", queryInfoCollection.keySet());
             multiQueryResultPane.setContent(queryInfoCollection, queryResultCollection, getDynamicStatusBar(), executeSqlPoolService.getTotalCost());
             getItems().add(multiQueryResultPane);
 //            发送SQL执行完成事件

@@ -15,6 +15,7 @@ import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ConversionUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -125,26 +126,27 @@ public class SqlExecutor {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         Frameworks.newConfigBuilder().parserConfig(SqlParser.config().withCaseSensitive(false))
                 .context(Contexts.of(contextClassLoader)).build();
+
 //        创建Statement,作用于创建出来的ResultSet
 //        第一个参数:允许在列表中向前或向后移动，甚至可以进行特定定位 第二个参数:指定不可以更新 ResultSet(缺省值)
         Statement statement = calciteConnection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        log.info("执行SQL分析链,原始SQL:[{}]", sql);
+        log.info("准备执行SQL分析(责任链),原始SQL:[{}]", sql);
 //        SqlParseHelper.getKind(sql);
         if (StringUtils.isNotEmpty(defaultSchema)) {
             sql = SqlAnalyzerFactory.analysisSql(sql, calciteConnection.getRootSchema().getSubSchema(defaultSchema));
         } else {
             sql = SqlAnalyzerFactory.analysisSql(sql, calciteConnection.getRootSchema());
         }
-        log.info("准备执行分析后的SQL：[{}],线程ID：{}", sql, Thread.currentThread().getId());
+        log.info("准备执行分析后的SQL:[{}],线程ID：{}", sql, Thread.currentThread().getId());
 //        执行SQL脚本,并获取结果集,注:resultSet在没有调用next()方法时,getRow()的值为0,当前游标指向第一行的前一行
         ResultSet resultSet = statement.executeQuery(sql);
 //        CachedRowSet cachedRowSet = new CachedRowSetImpl();
 //        cachedRowSet.populate(resultSet);
 //        cachedRowSet.getMaxRows();
 
-        log.info("SQL执行用时：[{}毫秒]线程ID：{} ", stopWatch.getTime(TimeUnit.MILLISECONDS), Thread.currentThread().getId());
+        log.info("SQL执行耗时:[{}毫秒]线程ID：{} ", stopWatch.getTime(TimeUnit.MILLISECONDS), Thread.currentThread().getId());
 //        获取查询记录数,注意使用类型如Long类型的可变与不可变
         AtomicLong recordCount = new AtomicLong(0);
 //        遍历结果集,抽取数据及元数据信息,注意结果集遍历后,ResultSet的游标已指向最后一行的后一行

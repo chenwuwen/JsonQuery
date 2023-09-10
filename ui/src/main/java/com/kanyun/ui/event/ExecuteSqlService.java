@@ -58,6 +58,7 @@ public class ExecuteSqlService extends Service<Pair<Map<String, Integer>, List<M
     }
 
 
+
     public Map<String, Object> getQueryInfo() {
         return queryInfo;
     }

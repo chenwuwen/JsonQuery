@@ -130,7 +130,7 @@ public abstract class AbstractFuncSource {
 //        AppClassLoader：用于加载CLASSPATH下的类,是大多数自定义类加载器的父加载器,因此该加载器也用于加载大多数的自定义类,其父加载器为ExtClassLoader,查找范围：java.class.path
         String classPath = System.getProperty("java.class.path");
 //        获得当前函数包所在路径,多个函数包之前分号间隔
-        String funcPath = jarFiles.stream().map(x -> x.getAbsolutePath()).collect(Collectors.joining(";"));
+        String funcPath = jarFiles.stream().map(File::getAbsolutePath).collect(Collectors.joining(";"));
 //        将jvm启动时的classpath与新添加的函数路径组合起来,并设置到classpath中
         classPath = classPath + ";" + funcPath;
         log.info("设置classPath的属性:{}", classPath);
@@ -240,6 +240,7 @@ public abstract class AbstractFuncSource {
             }
         }
     }
+
     /**
      * 注册聚合函数
      */
@@ -248,11 +249,10 @@ public abstract class AbstractFuncSource {
         Set<Map.Entry<String, Class>> udafEntries = userDefineAggregateFunctions.entrySet();
         udafEntries.addAll(innerDefineAggregateFunctions.entrySet());
         for (Map.Entry<String, Class> entry : udafEntries) {
-            log.debug("待注册的函数信息：[{}.{}()]", entry.getValue().getName(), entry.getKey());
+            log.debug("待注册的聚合函数信息：[{}.{}()]", entry.getValue().getName(), entry.getKey());
             try {
-//                第一个参数为在SQL中使用的函数名,第二个参数是传入类及类的方法名所创建的函数实例.
-//                例如:自定义的函数为com.kanyun.fun.CustomFunc#applyDate() 但是在写SQL时希望把函数名写为APPLY_DATE,此时第一个参数应为APPLY_DATE
-                schemaPlus.add(entry.getKey(), ScalarFunctionImpl.create(entry.getValue(), entry.getKey()));
+//                todo 动态注册自定义函数与动态注册普通函数 方法不同
+                schemaPlus.add(entry.getKey(), DynamicAggFunctionImpl.create(entry.getValue()));
             } catch (Exception e) {
                 log.error("自定义聚合函数注册异常!:", e);
             }

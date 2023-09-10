@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * ObjectsTab 主要用来显示数据库中的表
  */
-public class TabObjectsPane extends VBox implements TabKind {
+public class TabObjectsPane extends AbstractTab {
 
     private static final Logger log = LoggerFactory.getLogger(TabObjectsPane.class);
 
@@ -42,8 +42,12 @@ public class TabObjectsPane extends VBox implements TabKind {
 
     /**
      * 动态信息属性
+     * 初始化放在 {@link this#createDynamicInfoStatusBar()}
+     * 因为子类在实例化时会先调用父类的构造方法,而此时该成员变量尚未初始化,
+     * 由于父类的构造方法调用了子类的{@link this#createDynamicInfoStatusBar()}
+     * 因此初始化放在 {@link this#createDynamicInfoStatusBar()}
      */
-    private SimpleStringProperty dynamicInfoProperty = new SimpleStringProperty();
+    private SimpleStringProperty dynamicInfoProperty ;
 
     /**
      * Objects容器,即Objects存放的位置
@@ -51,9 +55,9 @@ public class TabObjectsPane extends VBox implements TabKind {
     private FlowPane objectsContainer;
 
     public TabObjectsPane() {
+
         setId("TabObjectsPane");
         getChildren().add(initToolBar());
-        createDynamicInfoStatusBar();
         createObjectsContainer();
         getChildren().add(objectsContainer);
         addEventHandler(UserEvent.SHOW_OBJECTS, event -> {
@@ -151,8 +155,8 @@ public class TabObjectsPane extends VBox implements TabKind {
         dynamicInfoStatusBar = new StatusBar();
 //        不设置的话,默认有个OK字样
         dynamicInfoStatusBar.setText("");
+        dynamicInfoProperty = new SimpleStringProperty();
         dynamicInfoStatusBar.textProperty().bind(dynamicInfoProperty);
-        addStatusBarEventListener();
     }
 
     @Override
