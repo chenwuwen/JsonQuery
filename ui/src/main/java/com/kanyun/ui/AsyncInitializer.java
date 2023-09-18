@@ -5,6 +5,7 @@ import com.jfoenix.svg.SVGGlyphLoader;
 import com.kanyun.ui.model.Constant;
 import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,7 @@ public class AsyncInitializer implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(AsyncInitializer.class);
 
     /**
-     * 过渡场景(旧场景)
+     * 过渡场景(启动页场景)
      */
     private final Stage splashStage;
 
@@ -37,6 +38,7 @@ public class AsyncInitializer implements Runnable {
             jsonQuery.initConfig();
             Scene mainScene = InterfaceInitializer.initializeMainScene();
             loadAllGlyphsFont();
+            Font.loadFont(getClass().getResourceAsStream("/fonts/OpenSansEmoji.ttf"), 12);
 //            阻塞,需要等待动画播放完毕再切换场景
             Constant.SCENE_SWITCH_FLAG.await();
             log.info("过渡页动画播放完毕,准备切换到主场景");
@@ -55,9 +57,9 @@ public class AsyncInitializer implements Runnable {
      * 因此使用Platform.runLater()可以进行一些简单的UI更新,如果复杂了容易出现无响应,页面卡顿
      * 同样可以实现异步功能的还有 javafx.concurrent.Service/javafx.concurrent.Task
      * 它们主要是异步执行耗时任务,然后同步监听状态并更新UI
-     * https://blog.csdn.net/baidu_25117757/article/details/117381419
+     * <a href="https://blog.csdn.net/baidu_25117757/article/details/117381419">...</a>
      *
-     * @param mainScene 主Scene
+     * @param mainScene 主场景
      */
     private void switchScene(Scene mainScene) {
         log.info("当前切换场景的线程是否是Fx线程：{}", Platform.isFxApplicationThread());
@@ -71,11 +73,13 @@ public class AsyncInitializer implements Runnable {
         Stage mainStage = new Stage();
         mainStage.setTitle(splashStage.getTitle());
         mainScene.getStylesheets().addAll("css/button.css", "css/components.css", "css/context-menu.css");
+//        加载JFoenix UI库样式
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-design.css").toExternalForm());
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-fonts.css").toExternalForm());
-//        场景设置到窗口区域
+//        讲主场景设置到主窗口区域
         mainStage.setScene(mainScene);
         mainStage.show();
+//        关闭启动页窗口
         splashStage.close();
         mainStage.setOnCloseRequest(request -> Platform.exit());
     }

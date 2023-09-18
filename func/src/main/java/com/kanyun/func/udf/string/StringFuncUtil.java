@@ -1,4 +1,4 @@
-package com.kanyun.func.string;
+package com.kanyun.func.udf.string;
 
 import com.google.gson.JsonParser;
 import sun.misc.BASE64Encoder;

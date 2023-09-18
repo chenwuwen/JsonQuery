@@ -57,12 +57,14 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
             new ThreadFactoryBuilder().setNameFormat("execute-sql-service-pool-%d").build());
 
     /**
-     * 待执行的SQL集合
+     * 待执行的SQL集合,当Service任务成功/失败/取消时清空该集合
+     * 实现在Service的回调函数中 {@link this#succeeded()} {@link this#failed()}} {@link this#cancelled()}
      */
     private List<String> sqlList = new LinkedList<>();
 
     /**
      * 总耗时,从创建任务到任务完成的耗时
+     * 多条SQL的执行总耗时(并行)
      * 单位:秒
      */
     private String totalCost;
@@ -78,6 +80,11 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
         return this;
     }
 
+    /**
+     * 添加待执行的SQL
+     * @param sql
+     * @return
+     */
     public ExecuteSqlPoolService addSql(String sql) {
         if (StringUtils.isNotBlank(sql)) {
 //            去除SQL首位空格和换行符
@@ -87,6 +94,11 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
         return this;
     }
 
+    /**
+     * 添加待执行的SQL集合
+     * @param sqls
+     * @return
+     */
     public ExecuteSqlPoolService addAllSql(Collection<String> sqls) {
         for (String sql : sqls) {
             addSql(sql);
@@ -136,22 +148,21 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
                     Pair<Map<String, Integer>, List<Map<String, Object>>> sqlResult = future.get();
                     queryResultCollection.put(sql, sqlResult);
                 }
-//                说明异步任务执行完毕
+//                说明异步任务执行完毕,设置SQL执行属性信息集合
                 sortQueryInfoCollection();
-//                清空待执行的SQL集合
-                sqlList.clear();
                 String cost = TabKind.getSecondForMilliSecond(System.currentTimeMillis() - startTime);
                 totalCost = cost;
                 return queryResultCollection;
             }
         };
-
-
         return executeSqlTasks;
     }
 
     /**
      * 对查询信息集合按照SQL的执行顺序(虽然SQL是并行执行的,但是SQL的书写是有顺序的,也即先开始的不一定先结束)进行排序
+     * 同时设置SQL执行的属性信息,如:
+     * sql1 -> 执行耗时,执行记录数
+     * sql2 -> 执行耗时,执行记录数
      */
     private void sortQueryInfoCollection() {
         Map<String, Map<String, Object>> sortQueryInfoCollection = new LinkedHashMap<>();
@@ -165,6 +176,8 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
     @Override
     protected void succeeded() {
         super.succeeded();
+//        清空待执行的SQL集合
+        sqlList.clear();
         log.debug("succeeded()是否是JavaFX Application Thread: [{}]", Platform.isFxApplicationThread());
     }
 
@@ -178,8 +191,18 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
     @Override
     protected void failed() {
         super.failed();
+//        清空待执行的SQL集合
+        sqlList.clear();
         log.error("异步SQL执行任务异常:", super.getException());
     }
+
+    @Override
+    protected void cancelled() {
+        super.cancelled();
+//        清空待执行的SQL集合
+        sqlList.clear();
+    }
+
 
     public String getTotalCost() {
         return totalCost;

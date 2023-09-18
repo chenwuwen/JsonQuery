@@ -5,6 +5,7 @@ import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.IconProperties;
 import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.components.SqlComponent;
+import com.kanyun.ui.components.statusbar.AppStatusBar;
 import com.kanyun.ui.event.StatusBarProgressTask;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.model.DataBaseModel;
@@ -24,6 +25,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
@@ -300,7 +302,7 @@ public class TabQueryPane extends AbstractTab {
 
     @Override
     public void createDynamicInfoStatusBar() {
-        dynamicInfoStatusBar = new StatusBar();
+        dynamicInfoStatusBar = new AppStatusBar();
 //        不设置的话,默认有个OK字样
         dynamicInfoStatusBar.setText("");
     }
@@ -356,6 +358,16 @@ public class TabQueryPane extends AbstractTab {
             stopSqlExecuteProgressTask();
             ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(event.getException());
             sqlExecuteErrDialog.setTitle("SQL执行失败");
+            sqlExecuteErrDialog.setResizable(true);
+//            controlfx的ExceptionDialog弹窗大小时根据异常信息长度自适应的,又由于错误信息可能会比较长,
+//            而ExceptionDialog没有setMaxWidth()/setMaxHeight()方法,因此这里使用容器来承载错误信息
+            TextArea textArea = new TextArea(event.getException().getMessage());
+            textArea.setWrapText(true);
+            textArea.setMaxHeight(getScene().getWidth());
+            textArea.setMaxHeight(getScene().getHeight());
+            textArea.setMinHeight(Region.USE_COMPUTED_SIZE);
+            textArea.setMinWidth(Region.USE_COMPUTED_SIZE);
+            sqlExecuteErrDialog.getDialogPane().setContent(textArea);
             sqlExecuteErrDialog.show();
         });
     }

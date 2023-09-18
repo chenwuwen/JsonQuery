@@ -18,6 +18,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Separator;
 import javafx.scene.control.ToolBar;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -181,9 +182,13 @@ public class TableColumnActionBar extends ToolBar {
 //                .threshold(3, Notifications.create().title("Threshold Notification"));
 //        notificationBuilder.showInformation();
 
-        JFXSnackbar snackbar = new JFXSnackbar((Pane)this.getParent());
+        JFXSnackbar snackbar = new JFXSnackbar((Pane) this.getParent());
         snackbar.setPrefWidth(300);
-        snackbar.fireEvent(new JFXSnackbar.SnackbarEvent(new JFXSnackbarLayout("Toast Message " )));
+//        样式见 .jfx-snackbar-toast/.jfx-snackbar-layout
+        Node content = new JFXSnackbarLayout("保存成功");
+//        创建JFXSnackbar.SnackbarEvent事件,并设置Node以及持续时间
+        JFXSnackbar.SnackbarEvent snackbarEvent = new JFXSnackbar.SnackbarEvent(content, Duration.seconds(3));
+        snackbar.fireEvent(snackbarEvent);
 
     }
 

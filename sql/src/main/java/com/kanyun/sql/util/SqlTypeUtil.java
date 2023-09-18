@@ -3,6 +3,7 @@ package com.kanyun.sql.util;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
+import org.apache.calcite.runtime.FunctionContexts;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -13,7 +14,7 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 /**
- * SQL类型转换
+ * SQL类型转换,将SQL中使用的类型转换为Java类型(包装类型)
  */
 public class SqlTypeUtil {
 

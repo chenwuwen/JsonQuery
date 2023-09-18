@@ -2,9 +2,27 @@
     -fx-padding: 4px;
     -fx-pref-height: 30px;
     -fx-background-color: rgba(211, 211, 211, 0), -fx-body-color;
-    -fx-background-insets: 0, 1
+    -fx-background-insets: 0, 1;
+    -fx-wrap-text: true;
 }
 
+.status-bar > .status-label {
+    -fx-font-family: "Bodoni MT";
+    -fx-text-color: red;
+    -fx-wrap-text: true;
+    -fx-text-fill: yellow;
+}
+
+.jfx-snackbar-layout {
+    -fx-background-color: rgba(0, 128, 0, 0.85);
+    -fx-alignment: center;
+    -fx-background-insets: 5, 0, 0, 0;
+}
+
+.jfx-snackbar-toast {
+    -fx-text-fill: white;
+    -fx-text-alignment: center;
+}
 
 .jfx-tree-view, .tree-cell {
     /*不显示TreeView选中中的蓝色方框*/
@@ -19,7 +37,7 @@
 
 .tree-cell:selected {
     /*TreeCell选中时,字体加粗*/
-    -fx-font-weight: bold ;
+    -fx-font-weight: bold;
 }
 
 .tree-cell {
@@ -31,7 +49,7 @@
 }
 
 .text-area {
-    -fx-background-color:  white;
+    -fx-background-color: white;
     -fx-border-style: none;
     -fx-font-family: Consolas;
     /*内边距,SQL与边框的距离(上右下左)*/
@@ -51,7 +69,8 @@
     /*不显示空行,空行背景色透明*/
     -fx-background-color: transparent;
 }
-.table-view{
+
+.table-view {
     -fx-background-color: #f9f9f9;
     -fx-border-width: 0px;
     /*点击tableview的边框颜色,默认是蓝色*/
@@ -60,8 +79,8 @@
 }
 
 /*.tab{*/
-    /*设置tab标题与边框的距离*/
-    /*-fx-padding: 2px,2px,2px,2px;*/
+/*设置tab标题与边框的距离*/
+/*-fx-padding: 2px,2px,2px,2px;*/
 /*}*/
 
 /*.split-menu-button .arrow-button {*/

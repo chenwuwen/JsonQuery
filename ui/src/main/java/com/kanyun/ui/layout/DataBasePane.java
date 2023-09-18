@@ -20,6 +20,8 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Priority;
@@ -128,6 +130,7 @@ public class DataBasePane extends VBox {
      * 1.文件后缀为.json
      * 2.文件编码格式为UTF-8(重要,否则反序列化Json可能失败)
      * 不过这里暂时不对第二种要求做处理,当解析Json文件反序列化失败时,抛出异常,手动处理编码问题
+     *
      * @param parentPath
      * @return
      */
@@ -276,6 +279,7 @@ public class DataBasePane extends VBox {
             MenuItem updDatabaseItem = new MenuItem("编辑数据库");
             MenuItem refreshDatabaseItem = new MenuItem("刷新数据库");
             MenuItem inspectTable = new MenuItem("检查表");
+            MenuItem copyTableName = new MenuItem("复制表名");
             ContextMenu menu = new ContextMenu();
             TreeItem<BaseModel> selectedItem = dataBasesTreeView.getSelectionModel().getSelectedItem();
 //          todo  未选中项时,selectedItem是null,此时也可以直接触发添加数据库操作
@@ -284,7 +288,7 @@ public class DataBasePane extends VBox {
             int treeItemLevel = dataBasesTreeView.getTreeItemLevel(selectedItem);
 //            说明点击的是表
             if (selectedItem.isLeaf()) {
-                menu.getItems().add(inspectTable);
+                menu.getItems().addAll(inspectTable, copyTableName);
                 dataBasesTreeView.setContextMenu(menu);
             }
 //            说明右键的是数据库
@@ -310,6 +314,16 @@ public class DataBasePane extends VBox {
                 TableModel tableModel = (TableModel) selectedItem.getValue();
                 userEvent.setTableModel(tableModel);
                 UserEventBridgeService.bridgeUserEvent2ContentPane(userEvent);
+            });
+
+//            点击了复制表名按钮,将表名复制到剪切板上
+            copyTableName.setOnAction(e -> {
+                TableModel tableModel = (TableModel) selectedItem.getValue();
+                String tableName = tableModel.getSchemaName() + "." + tableModel.getTableName();
+                Clipboard clipboard = Clipboard.getSystemClipboard();
+                ClipboardContent clipboardContent = new ClipboardContent();
+                clipboardContent.putString(tableName);
+                clipboard.setContent(clipboardContent);
             });
 
         }

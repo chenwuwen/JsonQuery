@@ -10,8 +10,10 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Group;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.image.ImageView;
@@ -52,7 +54,7 @@ public class BottomInfoPane extends HBox {
     /**
      * 动态信息显示组件(右侧,size自动铺满)
      */
-    private StackPane dynamicInfoPane;
+    private StackPane dynamicInfoPane  = new StackPane();
 
     public BottomInfoPane() {
         setId("BottomInfoPane");
@@ -60,13 +62,11 @@ public class BottomInfoPane extends HBox {
         setAlignment(Pos.CENTER_LEFT);
 //        设置子节点之间的间距
         setSpacing(0);
-        dynamicInfoPane = new StackPane();
-
-        getChildren().addAll(createDataBaseInfo(), dynamicInfoPane);
+        createDataBaseInfo();
+        getChildren().addAll(dataBaseInfoStatusBar, dynamicInfoPane);
 //      Hgrow是 horizontal grow缩写意为水平增长，在这里是水平增长占满窗口
 //        这里只设置一个组件为动态增长,另一个组件则手动设置值(通过监听器),如果设置两个组件都水平增长,则单独给组件设置宽度值是没有效果的
         HBox.setHgrow(dynamicInfoPane, Priority.ALWAYS);
-        HBox.setHgrow(dataBaseInfoStatusBar, Priority.NEVER);
         widthProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
@@ -84,7 +84,7 @@ public class BottomInfoPane extends HBox {
      *
      * @return
      */
-    public StatusBar createDataBaseInfo() {
+    public void createDataBaseInfo() {
         dataBaseInfoStatusBar = new StatusBar();
 //        不设置的话,默认有个OK字样
         dataBaseInfoStatusBar.setText("没有数据库");
@@ -115,7 +115,6 @@ public class BottomInfoPane extends HBox {
 
             ModelJson.getModelJson(dataBaseModel.getName());
         });
-        return dataBaseInfoStatusBar;
     }
 
 
@@ -128,8 +127,11 @@ public class BottomInfoPane extends HBox {
      * @param pos 比例
      */
     public void setDataBaseInfoStatusBarWith(Double pos) {
-        dataBaseInfoStatusBar.setPrefWidth(parentWidthProperty.get() * pos > Constant.DATABASE_TREE_PANE_MAX_WIDTH
-                ? Constant.DATABASE_TREE_PANE_MAX_WIDTH + 3 : parentWidthProperty.get() * pos);
+        double with = parentWidthProperty.get() * pos > Constant.DATABASE_TREE_PANE_MAX_WIDTH
+                ? Constant.DATABASE_TREE_PANE_MAX_WIDTH + 3 : parentWidthProperty.get() * pos;
+        dataBaseInfoStatusBar.setPrefWidth(with);
+//        由于dynamicInfoPane设置了自动增长,当dynamicInfoPane内元素过长时,会侵占dataBaseInfoStatusBar的空间,因此同时设置dataBaseInfoStatusBar的minWidth属性
+        dataBaseInfoStatusBar.setMinWidth(with);
     }
 
     /**

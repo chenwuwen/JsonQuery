@@ -1,5 +1,6 @@
 package com.kanyun.ui;
 
+import com.kanyun.ui.model.Constant;
 import com.kanyun.ui.splash.SplashPane;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -29,7 +30,7 @@ public class JsonQueryApplication extends Application {
         primaryStage.setOnCloseRequest(event -> {
 //            todo 弹出关闭确认
         });
-        primaryStage.setTitle("JsonQuery");
+        primaryStage.setTitle(Constant.APP_NAME);
 //        设置为true时,需要按ESC才能退出全屏,全屏状态下,将隐藏标题栏,无法缩小与隐藏
         primaryStage.setFullScreen(false);
 //        欢迎页(过渡页)
@@ -51,7 +52,7 @@ public class JsonQueryApplication extends Application {
      */
     @Override
     public void init() throws Exception {
-        log.info("===========JsonQuery数据初始化===========");
+        log.info("===========应用数据初始化===========");
 //        JsonQuery jsonQuery = new JsonQuery();
 //        jsonQuery.initConfig();
     }

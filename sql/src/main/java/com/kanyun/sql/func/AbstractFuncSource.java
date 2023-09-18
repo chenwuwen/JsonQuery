@@ -1,7 +1,9 @@
 package com.kanyun.sql.func;
 
 import com.kanyun.sql.util.ClassUtil;
+import org.apache.calcite.adapter.enumerable.AggImplementor;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.impl.AggregateFunctionImpl;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.reflections.Reflections;
@@ -223,10 +225,10 @@ public abstract class AbstractFuncSource {
     }
 
     /**
-     * 注册函数
+     * 动态注册函数
      */
     public static void registerFunction(SchemaPlus schemaPlus) {
-        log.debug("=======Schema:[{}],开始注册函数======", schemaPlus.getName());
+        log.debug("=======Schema:[{}],开始注册函数======", schemaPlus.getParentSchema() == null ? "rootSchema" : schemaPlus.getName());
         Set<Map.Entry<String, Class>> udfEntries = userDefineFunctions.entrySet();
         udfEntries.addAll(innerDefineFunctions.entrySet());
         for (Map.Entry<String, Class> entry : udfEntries) {
@@ -242,17 +244,30 @@ public abstract class AbstractFuncSource {
     }
 
     /**
-     * 注册聚合函数
+     * 动态注册聚合函数
+     * 动态注册自定义函数与动态注册普通函数方式不同
+     * 1: 聚合函数是一个类表示一个函数
+     * 2：聚合函数类中需要包含 init()/add()/result() 这三个静态方法 public static 修饰的方法
+     * 3: 注册时需要创建AggregateFunction接口的实例 {@link  AggregateFunctionImpl#create(Class)}
+     * 4: 创建AggregateFunction接口的实例的时候,需要实现自定义的AggImplementor接口的实例,该接口负责生成Linq4j的表达式 {@link  AggregateFunctionImpl#getImplementor(boolean)}
+     * 5: 当 {@link  AggregateFunctionImpl#create(Class)} 不能满足需求时,可自定义实现AggregateFunction接口,并自定义实现{@link AggImplementor} 接口,难度较大,需要对linq表达式熟悉
+     *
+     * 目前发现的问题是,在使用自定义聚合函数时,需要注意聚合函数的参数类型,例如聚合函数的参数是Double类型,而字段类型是Integer,
+     * 此时当给这个字段应用函数时,会报错(生成linq表达式报错,找不到类型对应的方法),
+     * 解决思路：
+     * 1.自定义AggregateFunction接口实现和AggImplementor实现,更改生成linq表达式逻辑
+     * 2.sql中使用cast(字段 as 函数需要的类型)函数,先转换字段类型,在应用函数 custFunc(cast(字段 as custFunc期待的类型))
      */
     public static void registerAggFunction(SchemaPlus schemaPlus) {
-        log.debug("=======Schema:[{}],开始注册聚合函数======", schemaPlus.getName());
+        log.debug("=======Schema:[{}],开始注册聚合函数======", schemaPlus.getParentSchema() == null ? "rootSchema" : schemaPlus.getName());
         Set<Map.Entry<String, Class>> udafEntries = userDefineAggregateFunctions.entrySet();
         udafEntries.addAll(innerDefineAggregateFunctions.entrySet());
         for (Map.Entry<String, Class> entry : udafEntries) {
             log.debug("待注册的聚合函数信息：[{}.{}()]", entry.getValue().getName(), entry.getKey());
             try {
-//                todo 动态注册自定义函数与动态注册普通函数 方法不同
-                schemaPlus.add(entry.getKey(), DynamicAggFunctionImpl.create(entry.getValue()));
+//                todo 动态注册自定义函数与动态注册普通函数方式不同,它需要创建AggregateFunction接口的实例
+//                schemaPlus.add(entry.getKey(), DynamicAggFunctionImpl.create(entry.getValue(), entry.getKey()));
+                schemaPlus.add(entry.getKey(), AggregateFunctionImpl.create(entry.getValue()));
             } catch (Exception e) {
                 log.error("自定义聚合函数注册异常!:", e);
             }
