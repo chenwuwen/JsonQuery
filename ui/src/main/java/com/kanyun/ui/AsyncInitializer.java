@@ -7,10 +7,12 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 异步初始化
@@ -34,11 +36,22 @@ public class AsyncInitializer implements Runnable {
     public void run() {
         JsonQuery jsonQuery = new JsonQuery();
         try {
+            StopWatch started = StopWatch.createStarted();
 //            初始化应用配置
             jsonQuery.initConfig();
+            started.stop();
+            log.info("初始化应用配置耗时:{}毫秒", started.getTime());
+            started.reset();
+            started.start();
             Scene mainScene = InterfaceInitializer.initializeMainScene();
+            started.stop();
+            log.info("初始化主场景耗时:{}毫秒", started.getTime());
+            started.reset();
+            started.start();
             loadAllGlyphsFont();
             Font.loadFont(getClass().getResourceAsStream("/fonts/OpenSansEmoji.ttf"), 12);
+            started.stop();
+            log.info("初始化字体加载耗时:{}毫秒", started.getTime());
 //            阻塞,需要等待动画播放完毕再切换场景
             Constant.SCENE_SWITCH_FLAG.await();
             log.info("过渡页动画播放完毕,准备切换到主场景");
@@ -72,7 +85,7 @@ public class AsyncInitializer implements Runnable {
 //        splashStage.centerOnScreen();
         Stage mainStage = new Stage();
         mainStage.setTitle(splashStage.getTitle());
-        mainScene.getStylesheets().addAll("css/button.css", "css/components.css", "css/context-menu.css");
+        mainScene.getStylesheets().addAll("css/button.css", "css/components.css", "css/context-menu.css", "css/app-status-bar.css");
 //        加载JFoenix UI库样式
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-design.css").toExternalForm());
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-fonts.css").toExternalForm());

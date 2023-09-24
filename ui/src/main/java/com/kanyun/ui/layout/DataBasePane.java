@@ -8,6 +8,7 @@ import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.event.UserEventBridgeService;
 import com.kanyun.ui.model.BaseModel;
 import com.kanyun.ui.model.DataBaseModel;
+import com.kanyun.ui.model.ObjectsTypeEnum;
 import com.kanyun.ui.model.TableModel;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -103,7 +104,7 @@ public class DataBasePane extends VBox {
      */
     public void buildTableItem(DataBaseModel dataBase, TreeItem<BaseModel> dataBaseItem) {
         Collection<File> tables = getDataBaseTable(dataBase.getUrl());
-        List<String> tableNames = new ArrayList<>();
+        List<TableModel> tableModels = new ArrayList<>();
         for (File table : tables) {
             String tableName = Files.getNameWithoutExtension(table.getName());
             TableModel tableModel = new TableModel();
@@ -119,9 +120,9 @@ public class DataBasePane extends VBox {
             tableItem.setGraphic(tableImageView);
 //            将表item放到库item中(建立父子关系)
             dataBaseItem.getChildren().add(tableItem);
-            tableNames.add(tableName);
+            tableModels.add(tableModel);
         }
-        dataBase.setTables(FXCollections.observableList(tableNames));
+        dataBase.setTables(FXCollections.observableList(tableModels));
     }
 
     /**
@@ -243,6 +244,7 @@ public class DataBasePane extends VBox {
                 if (newValue.isExpanded() && dataBasesTreeView.getTreeItemLevel(newValue) == 1) {
 //                    判断当前选择的点击是否是展开状态,如果是,且点击的是数据库,则TabObjectsPane将设置内容
                     userEvent.setDataBaseModel(dataBaseModel);
+                    userEvent.setObjectsTypeEnum(ObjectsTypeEnum.SCHEMA);
                     UserEventBridgeService.bridgeUserEvent2TabObjectsPane(userEvent);
                 }
                 if (!newValue.isExpanded() && dataBasesTreeView.getTreeItemLevel(newValue) == 2) {

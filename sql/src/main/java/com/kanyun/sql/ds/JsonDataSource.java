@@ -30,6 +30,11 @@ public class JsonDataSource implements DataSource {
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(JsonDataSource.class);
 
     /**
+     * 最小连接数,即核心连接数
+     */
+    private static final Integer MIN_CONNECTION = 5;
+
+    /**
      * 连接池,当需要获取连接时,从连接池中获取,并移除该连接,当调用连接的close()方法时,将连接重新放到连接池中
      * 可配合当前可用连接池和不可用连接池来实现最大/小连接数,当获取连接时如果可用连接池已用尽,然后创建新的连接并添加到不可用连接池
      * 当再次创建连接时,先判断指定的连接池大小和当前不可用连接池的大小之和是否超过最大连接数
@@ -57,7 +62,7 @@ public class JsonDataSource implements DataSource {
 //        实例datasource前先清空连接池
         connectionPool.clear();
         this.modelJson = modelJson;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < MIN_CONNECTION; i++) {
             connectionPool.add(createConnection(modelJson));
         }
     }

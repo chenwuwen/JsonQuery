@@ -16,7 +16,7 @@ public class AppStatusBar  extends StatusBar {
      * Constructs a new status bar control.
      */
     public AppStatusBar() {
-        getStyleClass().add("status-bar"); //$NON-NLS-1$
+        getStyleClass().add("app-status-bar"); //$NON-NLS-1$
     }
 
     @Override

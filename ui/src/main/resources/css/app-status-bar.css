@@ -1,0 +1,32 @@
+/*对于公用的部分与StatusBar的样式保持一致*/
+.app-status-bar {
+    -fx-padding: 4px;
+    -fx-pref-height: 30px;
+    -fx-background-color: lightgray, -fx-body-color;
+    -fx-background-insets: 0, 1
+}
+
+.app-status-bar > .left-items,
+.app-status-bar > .right-items {
+    -fx-alignment: center;
+}
+
+/*以下是自定义的组件修改的部分*/
+.app-status-bar .app-status-text, .app-status-bar .app-status-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #424242;
+    -fx-border-width: 0px;
+    -fx-padding: 0;
+    /*文字间距*/
+    -fx-letter-spacing: 0.2em;
+    /*-fx-max-width: 300;*/
+}
+
+.app-status-bar .app-status-text .text, .app-status-bar .app-status-label .text {
+    -fx-padding: 0, 0, 0, 20;
+}
+
+.app-status-bar .app-status-text {
+    -fx-background-color: transparent;
+    -fx-border-width: 0px;
+}

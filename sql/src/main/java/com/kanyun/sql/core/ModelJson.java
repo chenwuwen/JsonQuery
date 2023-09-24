@@ -3,6 +3,7 @@ package com.kanyun.sql.core;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.kanyun.sql.SqlExecutor;
+import com.kanyun.sql.ds.DataSourceConnectionPool;
 import org.apache.calcite.model.ModelHandler;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.commons.lang3.StringUtils;
@@ -46,6 +47,7 @@ public class ModelJson {
     /**
      * 构建model.json字符串
      * model.json各模块详解:https://calcite.apache.org/docs/model.html
+     *
      * @param schemas       数据库列表
      * @param defaultSchema 默认数据库
      * @return
@@ -98,25 +100,18 @@ public class ModelJson {
      * 移除的化目前还有找到api
      */
     public static void rebuildCalciteConnection(String modelJson) {
-        try {
-            SqlExecutor.rebuildCalciteConnection(modelJson);
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-        }
+//            todo 重建连接池
+
     }
 
     /**
      * 创建Calcite连接
+     *
      * @param modelJson
      */
     public static void createCalciteConnection(String modelJson) {
-        try {
-            SqlExecutor.buildCalciteConnection(modelJson);
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-        }
+        DataSourceConnectionPool.initConnectionPool(modelJson);
     }
-
 
 
 }

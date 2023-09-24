@@ -2,6 +2,7 @@ package com.kanyun.sql;
 
 import com.kanyun.sql.analysis.SqlAnalyzerFactory;
 import com.kanyun.sql.core.ColumnValueConvert;
+import com.kanyun.sql.ds.DataSourceConnectionPool;
 import com.kanyun.sql.func.AbstractFuncSource;
 import com.kanyun.sql.func.ExternalFuncClassLoader;
 import org.apache.calcite.avatica.AvaticaResultSet;
@@ -33,119 +34,27 @@ import java.util.concurrent.atomic.AtomicLong;
  * SQL执行类
  * https://blog.csdn.net/weixin_45371411/article/details/128961679
  */
-public class SqlExecutor {
+public class SqlExecutor extends AbstractSqlExecutor{
 
     private static final Logger log = LoggerFactory.getLogger(SqlExecutor.class);
 
-    static Properties info;
-
-    /**
-     * Calcite连接
-     */
-    static CalciteConnection calciteConnection;
-
-    static {
-//        也可以通过saffron.properties文件配置
-        System.setProperty("saffron.default.charset", ConversionUtil.NATIVE_UTF16_CHARSET_NAME);
-        System.setProperty("saffron.default.nationalcharset", ConversionUtil.NATIVE_UTF16_CHARSET_NAME);
-        System.setProperty("saffron.default.collation.name", ConversionUtil.NATIVE_UTF16_CHARSET_NAME + "$en_US");
-        info = new Properties();
-        info.setProperty(CalciteConnectionProperty.LEX.camelName(), Lex.JAVA.name());
-        info.setProperty(CalciteConnectionProperty.DEFAULT_NULL_COLLATION.camelName(), NullCollation.LAST.name());
-//        是否忽略大小写
-        info.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "true");
-        info.setProperty(CalciteConnectionProperty.PARSER_FACTORY.camelName(), "org.apache.calcite.sql.parser.impl.SqlParserImpl#FACTORY");
+    public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) {
+        return new SqlExecutor().executeSql(modelJson, defaultSchema, sql);
     }
 
-    /**
-     * 构建CalciteConnection,这里需要注意的是,除非是添加/删除了Schema外,CalciteConnection只初始化一次
-     * 为什么只初始化一次,因为每次初始化都需要重新执行com.kanyun.sql.core.JsonSchemaFactory类
-     * 这个可能会耗费性能
-     *
-     * @param modelJson
-     * @throws SQLException
-     */
-    public static void buildCalciteConnection(String modelJson) throws SQLException {
-        if (calciteConnection != null) return;
-//        另一种获取链接的方法
-//        info.put("model",modelJson)
-//        Connection connection =  DriverManager.getConnection("jdbc:calcite:", info);
-//        获取连接,此操作将初始化数据库,将调用 com.kanyun.sql.core.JsonSchemaFactory
-        Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
-//       转换为Calcite连接
-        calciteConnection = connection.unwrap(CalciteConnection.class);
-        registerFunc();
-    }
-
-    /**
-     * 重建Calcite连接,将触发JsonSchemaFactory.create()方法
-     */
-    public static void rebuildCalciteConnection(String modelJson) throws SQLException {
-        Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
-//       转换为Calcite连接
-        calciteConnection = connection.unwrap(CalciteConnection.class);
-        registerFunc();
-    }
-
-
-    /**
-     * 注册函数,仅在创建/重建 连接时注册,直接注册到RootSchema
-     * 这里把函数注册到RootSchema是因为
-     * 在实际应用中，RootSchema是根所有schema的路径，所有注册在RootSchema上的table或者是udf/udaf都是全局的，
-     * 意思就是说可以被SubSchema直接使用，而注册在SubSchema里的table或者是udf，则在使用中必须声明是哪个SubSchema拥有的。
-     */
-    public static void registerFunc() {
-//        取出rootSchema,需要注意的是rootSchema不等于model.json中的defaultSchema,rootSchema一般是空
-        SchemaPlus rootSchema = calciteConnection.getRootSchema();
-//        注册自定义函数(Calcite中内置的函数主要在org.apache.calcite.sql.fun.SqlStdOperatorTable中,包括常见的算术运算符、时间函数等)
-        AbstractFuncSource.registerFunction(rootSchema);
-//        注册聚合函数
-        AbstractFuncSource.registerAggFunction(rootSchema);
-    }
-
-    /**
-     * 执行SQL
-     * 注意Calcite SQL 不支持双引号,在SQL语法中双引号用于标识表名,列名等标识符,但是在Calcite中,
-     * 双引号不被视为标识符的一部分,因此不支持双引号(暂时没有找到可以转义字符的工具)
-     *
-     * @param modelJson     calcite model.json文件
-     * @param sql           待执行的sql
-     * @param defaultSchema 默认Schema
-     * @return
-     * @throws SQLException
-     */
-    public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) throws Exception {
-//        delayedExecute();
-        buildCalciteConnection(modelJson);
-//        动态设置defaultSchema(之所以动态设置,是避免重新获取Connection,因为使用ModelJson获取Connection浪费性能)
-        calciteConnection.setSchema(defaultSchema);
-        if (sql.endsWith(";")) {
-//            去掉sql中最后的分号
-            sql = sql.substring(0, sql.length() - 1);
-        }
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        Frameworks.newConfigBuilder().parserConfig(SqlParser.config().withCaseSensitive(false))
-                .context(Contexts.of(contextClassLoader)).build();
-
+    @Override
+    Pair<Map<String, Integer>, List<Map<String, Object>>> actualityExecute(CalciteConnection connection, String sql)  throws Exception{
 //        创建Statement,作用于创建出来的ResultSet
 //        第一个参数:允许在列表中向前或向后移动，甚至可以进行特定定位 第二个参数:指定不可以更新 ResultSet(缺省值)
-        Statement statement = calciteConnection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+        Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        log.info("准备执行SQL分析(责任链),原始SQL:[{}]", sql);
-//        SqlParseHelper.getKind(sql);
-        if (StringUtils.isNotEmpty(defaultSchema)) {
-            sql = SqlAnalyzerFactory.analysisSql(sql, calciteConnection.getRootSchema().getSubSchema(defaultSchema));
-        } else {
-            sql = SqlAnalyzerFactory.analysisSql(sql, calciteConnection.getRootSchema());
-        }
-        log.info("准备执行分析后的SQL:[{}],线程ID：{}", sql, Thread.currentThread().getId());
 //        执行SQL脚本,并获取结果集,注:resultSet在没有调用next()方法时,getRow()的值为0,当前游标指向第一行的前一行
         ResultSet resultSet = statement.executeQuery(sql);
+
 //        CachedRowSet cachedRowSet = new CachedRowSetImpl();
 //        cachedRowSet.populate(resultSet);
 //        cachedRowSet.getMaxRows();
-
         log.info("SQL执行耗时:[{}毫秒]线程ID：{} ", stopWatch.getTime(TimeUnit.MILLISECONDS), Thread.currentThread().getId());
 //        获取查询记录数,注意使用类型如Long类型的可变与不可变
         AtomicLong recordCount = new AtomicLong(0);
@@ -160,6 +69,7 @@ public class SqlExecutor {
         QueryInfoHolder.setExecuteSql(sql);
         resultSet.close();
         statement.close();
+        connection.close();
         return executeResult;
     }
 
@@ -203,20 +113,20 @@ public class SqlExecutor {
      * @throws SQLException
      */
     private static Long statisticsResultOfCount(ResultSet resultSet, AtomicLong recordCount) throws SQLException {
-        long record = 0;
+        long totalRecord = 0;
         if (resultSet instanceof CalciteResultSet) {
             CalciteResultSet calciteResultSet = (CalciteResultSet) resultSet;
 //            由于游标已执行最后一行的后一行,因此calciteResultSet.getRow()为0
 //            record = calciteResultSet.getRow();
-            record = recordCount.get();
+            totalRecord = recordCount.get();
         } else {
 //            结果集移到最后一行。这里注意如果需要获取查询记录数,有两种方法,1是遍历结果集累加,2游标执行结果集最后一行并取到行数
             resultSet.last();
-            record = resultSet.getRow();
+            totalRecord = resultSet.getRow();
 //            如果还要用结果集,将游标移动到结果集的初始位置，即在第一行之前,这里注意游标能不能移动要看在创建Statement时用的是什么参数
             resultSet.beforeFirst();
         }
-        return record;
+        return totalRecord;
     }
 
     /**

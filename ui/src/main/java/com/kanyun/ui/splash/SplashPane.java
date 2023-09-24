@@ -40,9 +40,10 @@ public class SplashPane extends StackPane {
      */
     private static final List<Animation> animationList = new ArrayList<>();
     /**
-     * 动画执行时间
+     * 设置动画时长(即动画多久播放完成)
+     * 可根据异步初始化配置所需时间来制定
      */
-    private static final double ANIMATION_SUSTAIN_TIME = 2;
+    private static final double ANIMATION_SUSTAIN_TIME = 7;
 
     /**
      * Svg图像位置
@@ -111,8 +112,9 @@ public class SplashPane extends StackPane {
     }
 
     /**
-     * 播放动画,虽然是循环播放,但由于是播放动画是异步
-     * 所以看起来是同步播放
+     * 播放动画：
+     * 虽然是多个动画依次播放,但由于是播放动画是异步的{@link Animation#play()}
+     * 所以看起来是多个动画同时播放
      */
     public void playAnimation() {
         if (animationList.size() != 0) {

@@ -18,7 +18,7 @@ public class DataBaseModel implements BaseModel {
     /**
      * 数据库表集合(不进行持久化,因为表的数量是变动的)
      */
-    private transient ObservableList<String> tables;
+    private transient ObservableList<TableModel> tables;
 
     public String getName() {
         return name;
@@ -36,11 +36,11 @@ public class DataBaseModel implements BaseModel {
         this.url = url;
     }
 
-    public ObservableList<String> getTables() {
+    public ObservableList<TableModel> getTables() {
         return tables;
     }
 
-    public void setTables(ObservableList<String> tables) {
+    public void setTables(ObservableList<TableModel> tables) {
         this.tables = tables;
     }
 

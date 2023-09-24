@@ -3,9 +3,12 @@ package com.kanyun.ui.tabs;
 import com.jfoenix.controls.JFXButton;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.JsonQuery;
+import com.kanyun.ui.components.ObjectsLabel;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.event.UserEventBridgeService;
+import com.kanyun.ui.model.BaseModel;
 import com.kanyun.ui.model.DataBaseModel;
+import com.kanyun.ui.model.ObjectsTypeEnum;
 import com.kanyun.ui.model.TableModel;
 import com.sun.javafx.event.EventUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -65,8 +68,8 @@ public class TabObjectsPane extends AbstractTab {
             ObservableList<Node> children = objectsContainer.getChildren();
             objectsContainer.getChildren().removeAll(children);
             if (event.getDataBaseModel() == null) return;
-            String dataBaseName = event.getDataBaseModel().getName();
-            buildObjects(dataBaseName);
+            buildObjects(event.getObjectsTypeEnum(), event.getDataBaseModel());
+
         });
     }
 
@@ -85,32 +88,27 @@ public class TabObjectsPane extends AbstractTab {
         objectsContainer.setHgap(20);
     }
 
+
     /**
-     * 构建Objects并装进容器,这里的对象只有三种类型,一种是函数,一种是表
+     * 构建Objects并装进容器,
+     * 这里的对象只有三种类型,一种是函数,一种是表
+     * 根据类型枚举来判断需要展示的内容
+     * 即:传输的类型为schema时,表示要展示的是table
      * 或者为空
      *
-     * @param dataBaseName
-     * @return
      */
-    public void buildObjects(String dataBaseName) {
-        if (StringUtils.isNotEmpty(dataBaseName)) {
-            ObservableList<DataBaseModel> dataBases = JsonQuery.dataBaseModels;
-            for (DataBaseModel dataBase : dataBases) {
-                if (dataBase.getName().equals(dataBaseName)) {
-                    ObservableList<String> tables = dataBase.getTables();
-                    for (String table : tables) {
-                        Label label = new Label(table);
-                        label.setOnMouseClicked(event -> {
-                            if (event.getClickCount() == 2) {
-//                                打开表
-                                openTable(dataBaseName, label.getText());
-                            }
-                        });
-                        objectsContainer.getChildren().add(label);
-                    }
-                    break;
-                }
-            }
+    private void buildObjects(ObjectsTypeEnum typeEnum, BaseModel baseModel) {
+        if (typeEnum == ObjectsTypeEnum.SCHEMA) {
+//            传输的对象的时Schema,说明展示的是表信息
+            buildObjectsForTable((DataBaseModel) baseModel);
+        }
+    }
+
+    private void buildObjectsForTable(DataBaseModel dataBaseModel) {
+        for (TableModel tableModel : dataBaseModel.getTables()) {
+            ObjectsLabel objectsLabel = new ObjectsLabel(tableModel.getTableName());
+//            Label objectsLabel = new Label(tableModel.getTableName());
+            objectsContainer.getChildren().add(objectsLabel);
         }
     }
 

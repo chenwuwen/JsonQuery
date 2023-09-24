@@ -2,6 +2,7 @@ package com.kanyun.ui.event;
 
 import com.kanyun.ui.components.SqlComponent;
 import com.kanyun.ui.model.DataBaseModel;
+import com.kanyun.ui.model.ObjectsTypeEnum;
 import com.kanyun.ui.model.TableModel;
 import com.kanyun.ui.tabs.TabObjectsPane;
 import com.kanyun.ui.tabs.TabQueryPane;
@@ -45,6 +46,11 @@ public class UserEvent extends Event {
      * 错误信息
      */
     private Throwable exception;
+
+    /**
+     * 传递的对象类型
+     */
+    private ObjectsTypeEnum objectsTypeEnum;
 
     public static final EventType<UserEvent> ANY = new EventType<>(Event.ANY, "ANY");
 
@@ -177,5 +183,13 @@ public class UserEvent extends Event {
 
     public void setException(Throwable exception) {
         this.exception = exception;
+    }
+
+    public ObjectsTypeEnum getObjectsTypeEnum() {
+        return objectsTypeEnum;
+    }
+
+    public void setObjectsTypeEnum(ObjectsTypeEnum objectsTypeEnum) {
+        this.objectsTypeEnum = objectsTypeEnum;
     }
 }

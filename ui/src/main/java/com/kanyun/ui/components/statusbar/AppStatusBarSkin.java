@@ -17,6 +17,8 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import org.apache.commons.lang3.StringUtils;
 import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
@@ -59,6 +61,12 @@ public class AppStatusBarSkin extends SkinBase<AppStatusBar> {
      */
     private StackPane stackPane;
 
+    /**
+     * AppStatusBar显示信息内容信息区域组件 {@link this#scrollPane 的父组件}
+     * StackPane背景色默认是透明的,会显示父组件的背景色
+     */
+    private StackPane statusBarMessageContainer;
+
     public AppStatusBarSkin(AppStatusBar statusBar) {
         super(statusBar);
         final BooleanBinding notZeroProgressProperty = Bindings.notEqual(0, statusBar.progressProperty());
@@ -100,28 +108,29 @@ public class AppStatusBarSkin extends SkinBase<AppStatusBar> {
                             getSkinnable().getRightItems());
                 });
 
-//        GridPane.setFillHeight(leftBox, true);
-//        GridPane.setFillHeight(rightBox, true);
-//        GridPane.setFillHeight(scrollPane, true);
-//        GridPane.setFillHeight(progressBar, true);
-//
-//        GridPane.setVgrow(leftBox, Priority.ALWAYS);
-//        GridPane.setVgrow(rightBox, Priority.ALWAYS);
-//        GridPane.setVgrow(progressBar, Priority.ALWAYS);
+        GridPane.setFillHeight(leftBox, true);
+        GridPane.setFillHeight(rightBox, true);
+        GridPane.setFillHeight(statusBarMessageContainer, true);
+        GridPane.setFillHeight(progressBar, true);
+
+        GridPane.setVgrow(leftBox, Priority.ALWAYS);
+        GridPane.setVgrow(rightBox, Priority.ALWAYS);
+        GridPane.setVgrow(progressBar, Priority.ALWAYS);
+        GridPane.setVgrow(statusBarMessageContainer, Priority.ALWAYS);
 
 //        设置左右盒子及进度条的最小宽度为可见的宽度(常量:Region.USE_COMPUTED_SIZE),避免它们的组件被其他组件占用
-//        leftBox.setMinWidth(Region.USE_COMPUTED_SIZE);
-//        leftBox.setPrefWidth(Region.USE_COMPUTED_SIZE);
-//        rightBox.setMinWidth(Region.USE_COMPUTED_SIZE);
-//        rightBox.setPrefWidth(Region.USE_COMPUTED_SIZE);
-//        progressBar.setMinWidth(Region.USE_COMPUTED_SIZE);
-//        progressBar.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        leftBox.setMinWidth(Region.USE_COMPUTED_SIZE);
+        leftBox.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        rightBox.setMinWidth(Region.USE_COMPUTED_SIZE);
+        rightBox.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        progressBar.setMinWidth(Region.USE_COMPUTED_SIZE);
+        progressBar.setPrefWidth(Region.USE_COMPUTED_SIZE);
 
-        GridPane.setHgrow(scrollPane, Priority.ALWAYS);
+        GridPane.setHgrow(statusBarMessageContainer, Priority.ALWAYS);
 
 //        将子组件添加到网格组件中
         gridPane.add(leftBox, 0, 0);
-        gridPane.add(scrollPane, 1, 0);
+        gridPane.add(statusBarMessageContainer, 1, 0);
         gridPane.add(progressBar, 2, 0);
         gridPane.add(rightBox, 3, 0);
 
@@ -135,55 +144,57 @@ public class AppStatusBarSkin extends SkinBase<AppStatusBar> {
      */
     private void buildStatusBarMessageContainer(AppStatusBar statusBar) {
         buildStatusBarMessageNode(statusBar);
+        statusBarMessageContainer = new StackPane();
         scrollPane = new ScrollPane();
         stackPane = new StackPane();
         stackPane.setPadding(new Insets(0));
-        stackPane.setBackground(statusBar.getBackground());
-        scrollPane.setBackground(statusBar.getBackground());
-        scrollPane.getStyleClass().add("app-status-bar-scroll-pane");
-//        stackPane.setAlignment(Pos.CENTER_LEFT);
+        scrollPane.setPadding(new Insets(0));
+        stackPane.setAlignment(Pos.CENTER_LEFT);
+//        JavaFX8中带有一个名为edge-to-edge的class,可以直接实现无边框效果,默认的灰色边框和选中时蓝色边框都会消失,效果非常好(但是这种方式可能会随着api变化而产生变动)
+        stackPane.getStyleClass().add("edge-to-edge");
+        scrollPane.getStyleClass().add("edge-to-edge");
+
+
+//       由于设置ScrollPane背景色太麻烦,因此直接设置ScrollPane的背景为透明,再为ScrollPane添加父组件,然后ScrollPane的背景色就显示为其父组件的背景色
+        scrollPane.setStyle("-fx-background: transparent");
+//        setScrollPaneBackground(statusBar);
+
         stackPane.getChildren().add(label);
 
-        scrollPane.getStyleClass().add("status-bar-scroll-pane");
-//        JavaFX8中带有一个名为edge-to-edge的class,可以直接实现无边框效果,默认的灰色边框和选中时蓝色边框都会消失，效果非常好
-        scrollPane.getStyleClass().add("edge-to-edge");
+
 //        设置横/纵向滚动条策略(不显示滚动条),仅仅只是不展示了,但滚动条的空间还是占用的
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setPrefViewportHeight(10);
-//        消除滚动条的空间,由于jdk8没有直接获取ScrollBar的方法,只能暂时使用这种形式
+//        消除滚动条的空间,由于jdk8没有直接获取ScrollBar的方法,只能暂时使用这种形式,设置ScrollPane的最小高度,用以抵消ScrollBar占用的空间
+        scrollPane.setMinHeight(0);
 //        直接使用lookup()查找ScrollBar的方式,得到的是一个Null,因为此时ScrollPane还未创建好
         ScrollBar hScrollBar = (ScrollBar) scrollPane.lookup(".scroll-bar:horizontal");
         assert hScrollBar == null : "直接使用ScrollPane.lookup()获取ScrollBar的结果非空";
 //        直接使用此种方式获取的ScrollPaneSkin也为Null
         ScrollPaneSkin scrollPaneSkin = (ScrollPaneSkin) scrollPane.getSkin();
         assert scrollPaneSkin == null : "直接使用ScrollPane.getSkin()获取ScrollPaneSkin的结果非空";
+
         scrollPane.skinProperty().addListener(new ChangeListener<Skin<?>>() {
             @Override
             public void changed(ObservableValue<? extends Skin<?>> observable, Skin<?> oldValue, Skin<?> newValue) {
                 ScrollPaneSkin scrollPaneSkin = (ScrollPaneSkin) newValue;
                 for (Node child : scrollPaneSkin.getChildren()) {
                     if (child instanceof ScrollBar) {
-//                        已知:设置-fx-pref-height: 0,滚动条还是会占用空间,而设置为更大的数,则占用空间则更大
                         ScrollBar scrollBar = (ScrollBar) child;
 //                        获取ScrollBar的方向(滚动条方向)
                         Orientation orientation = scrollBar.getOrientation();
-                        if (orientation == Orientation.HORIZONTAL) {
-                            scrollBar.setMaxSize(0,0);
-                        }else {
-                            scrollBar.setMaxSize(0,0);
-                        }
                     }
                 }
             }
         });
 
 
-//        是否根据内容自动调高(对于高度来说,设置为true,可以保证ScrollPane中的子元素居中)
+//        设置子组件尺寸是否填充ScrollPane的窗口
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
-
+//        设置ScrollPane的子组件
         scrollPane.setContent(stackPane);
+        statusBarMessageContainer.getChildren().add(scrollPane);
     }
 
 
@@ -193,20 +204,19 @@ public class AppStatusBarSkin extends SkinBase<AppStatusBar> {
      * @param statusBar
      */
     private void buildStatusBarMessageNode(AppStatusBar statusBar) {
-        label = new Label();
+//        TextField设置
         textField = new TextField();
         textField.setEditable(false);
-        textField.textProperty().bind(label.textProperty());
-        textField.maxWidthProperty().bind(label.widthProperty());
-        textField.setBackground(statusBar.getBackground());
+        textField.textProperty().bind(statusBar.textProperty());
+        textField.getStyleClass().add("app-status-text");
 
-//        label.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+//        Label设置
+        label = new Label();
         label.textProperty().bind(statusBar.textProperty());
         label.graphicProperty().bind(statusBar.graphicProperty());
-        label.styleProperty().bind(getSkinnable().styleProperty());
-        label.getStyleClass().add("status-label");
+        label.getStyleClass().add("app-status-label");
 //        内容超长不显示省略号
-        label.setTextOverrun(OverrunStyle.ELLIPSIS);
+        label.setTextOverrun(OverrunStyle.CLIP);
     }
 
 
@@ -215,6 +225,7 @@ public class AppStatusBarSkin extends SkinBase<AppStatusBar> {
      */
     private void addStatusBarMessageContainerAction(AppStatusBar statusBar) {
 
+
         scrollPane.addEventHandler(MouseEvent.MOUSE_ENTERED, new EventHandler<MouseEvent>() {
 
             @Override
@@ -222,27 +233,49 @@ public class AppStatusBarSkin extends SkinBase<AppStatusBar> {
                 logger.debug("AppStatusBar鼠标移动到Label区域,将Label替换为TextField");
                 if (StringUtils.isNotEmpty(label.getText())) {
                     if (stackPane.getChildren().get(0) != textField) {
+//                        设置光标到第一个字符前,如果之前光标移动过,此时光标会保持之前的位置,因此需要重新设置一下
+                        textField.positionCaret(0);
                         stackPane.getChildren().set(0, textField);
                     }
                 }
             }
         });
 
-        scrollPane.addEventHandler(MouseEvent.MOUSE_RELEASED, new EventHandler<MouseEvent>() {
+//        scrollPane.addEventHandler(MouseEvent.MOUSE_RELEASED, new EventHandler<MouseEvent>() {
+//            @Override
+//            public void handle(MouseEvent event) {
+//                logger.debug("AppStatusBar鼠标移出Label区域,将TextField替换为Label");
+//                stackPane.getChildren().set(0, label);
+//            }
+//        });
+
+        scrollPane.addEventHandler(MouseEvent.MOUSE_EXITED, new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
                 logger.debug("AppStatusBar鼠标移出Label区域,将TextField替换为Label");
                 stackPane.getChildren().set(0, label);
             }
         });
-//        scrollPane.addEventHandler(MouseEvent.MOUSE_EXITED, new EventHandler<MouseEvent>() {
-//            @Override
-//            public void handle(MouseEvent event) {
-//                if (event.isStillSincePress())
-//                logger.debug("AppStatusBar鼠标移出Label区域,将TextField替换为Label");
-//                stackPane.getChildren().set(0, label);
-//            }
-//        });
 
+    }
+
+
+    /**
+     * 设置ScrollPane的背景色
+     * 取StatusBar的主色来设置ScrollPane的背景色
+     * 由于UI界面存在一条白色的边框,因此设置ScrollPane的背景色(ScrollPane的背景色就是一个边框)
+     * 但是发现ScrollPane对背景色的要求(参数)比较严格,随意设置可能不会生效,使用css设置效果不错
+     * 但不一定能满足需求,因此该方法弃用,将ScrollPane的背景色设置为透明,然后显示ScrollPane父组件的颜色
+     * 同时设置ScrollPane父组件的背景色为StatusBar的主色(或设定的其他颜色)
+     */
+    @Deprecated
+    private void setScrollPaneBackground(StatusBar statusBar) {
+//        设置ScrollPane背景色需要注意一个点就是ScrollPane的背景色是一个圈,类似边框颜色.Background实例不同,可能导致背景色设置不成功
+        BackgroundFill statusBarBackgroundFill = statusBar.getBackground().getFills().get(0);
+        Paint statusBarFill = statusBarBackgroundFill.getFill();
+//        Paint statusBarFill = Color.BLUE;
+//        后两个参数对ScrollPane设置背景色起到重要作用,这里设置为Null,相当于只取StatusBar的主色,给ScrollPane设置背景色
+        Background scrollPaneBackground = new Background(new BackgroundFill(statusBarFill, null, null));
+        scrollPane.setBackground(scrollPaneBackground);
     }
 }
