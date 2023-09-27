@@ -354,7 +354,7 @@ public class TabQueryPane extends AbstractTab {
         });
 
         addEventHandler(UserEvent.EXECUTE_SQL_FAIL, event -> {
-            controlButtonEnableOrDisable(true);
+            controlButtonEnableOrDisable(false);
             stopSqlExecuteProgressTask();
             ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(event.getException());
             sqlExecuteErrDialog.setTitle("SQL执行失败");
@@ -404,7 +404,6 @@ public class TabQueryPane extends AbstractTab {
      * 当参数为false,则运行按钮禁用,停止按钮启用
      */
     public void controlButtonEnableOrDisable(boolean flag) {
-
         if (flag) {
             runButton.setDisable(false);
             stopButton.setDisable(true);

@@ -80,7 +80,7 @@ public interface TabKind {
      * @return
      */
     static String getSecondForMilliSecond(Object time) {
-        float milliSecond = Float.valueOf(String.valueOf(time));
+        float milliSecond = Float.parseFloat(String.valueOf(time));
         float second = milliSecond / 1000;
         return String.format("%.2f", second);
     }

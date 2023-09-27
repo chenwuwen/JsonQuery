@@ -159,6 +159,7 @@ public abstract class SqlComponent extends SplitPane {
             boolean cancel = executeSqlPoolService.cancel();
             log.debug("当前SQL任务:[{}],正在执行,取消任务执行,操作结果:[{}],并重置任务状态[setOnCancelled()]", executeSqlPoolService.getSqlList(), cancel);
         }
+        executeSqlPoolService.reset();
     }
 
     /**

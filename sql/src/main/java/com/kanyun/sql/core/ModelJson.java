@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.kanyun.sql.SqlExecutor;
 import com.kanyun.sql.ds.DataSourceConnectionPool;
+import com.kanyun.sql.ds.JsonDataSourceFactory;
 import org.apache.calcite.model.ModelHandler;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.commons.lang3.StringUtils;
@@ -111,6 +112,7 @@ public class ModelJson {
      */
     public static void createCalciteConnection(String modelJson) {
         DataSourceConnectionPool.initConnectionPool(modelJson);
+//        JsonDataSourceFactory.initDataSource(modelJson);
     }
 
 

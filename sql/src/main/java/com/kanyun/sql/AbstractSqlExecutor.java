@@ -2,6 +2,7 @@ package com.kanyun.sql;
 
 import com.kanyun.sql.analysis.SqlAnalyzerFactory;
 import com.kanyun.sql.ds.DataSourceConnectionPool;
+import com.kanyun.sql.ds.JsonDataSourceFactory;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,7 +22,7 @@ public abstract class AbstractSqlExecutor {
     private static final Logger log = LoggerFactory.getLogger(AbstractSqlExecutor.class);
 
     /**
-     * SQL分析
+     * SQL分析,可能会改变SQL
      */
     private static String analyzeSql(CalciteConnection connection, String defaultSchema, String sql) throws Exception {
         log.info("准备执行SQL分析(责任链),原始SQL:[{}]", sql);
@@ -49,32 +50,32 @@ public abstract class AbstractSqlExecutor {
     protected Pair<Map<String, Integer>, List<Map<String, Object>>> executeSql(String modelJson, String defaultSchema, String sql) {
 //        使用连接池获取CalciteConnection
         CalciteConnection connection = DataSourceConnectionPool.getConnection();
+//        CalciteConnection connection = JsonDataSourceFactory.getConnection();
         try {
 //            动态设置defaultSchema(之所以动态设置,是避免重新获取Connection,因为如果再次使用model.json中的defaultSchema来获取Connection,会浪费性能)
             connection.setSchema(defaultSchema);
-            if (sql.endsWith(";")) {
-//              去掉sql中最后的分号
-                sql = sql.substring(0, sql.length() - 1);
-            }
+//            去掉SQL字符串前后的空格,并且去掉sql中的分号
+            sql = sql.trim().replaceAll(";", "");
             sql = analyzeSql(connection, defaultSchema, sql);
             return actualityExecute(connection, sql);
         } catch (Exception e) {
-            log.error("");
-        }finally {
-//            归还连接到练级吃
+            log.error("SQL:{}执行报错:", sql, e);
+            throw new RuntimeException("SQL:" + sql + "执行报错:" + e.getMessage());
+        } finally {
+//            归还连接到连接池
             DataSourceConnectionPool.recoveryConnection(connection);
         }
-        return null;
     }
 
     /**
-     * 真实执行SQL
+     * 抽象方法->真实执行SQL,由子类实现
+     *
      * @param connection
      * @param sql
      * @return
      * @throws Exception
      */
-    abstract Pair<Map<String, Integer>, List<Map<String, Object>>> actualityExecute(CalciteConnection connection,String sql)  throws Exception;
+    abstract Pair<Map<String, Integer>, List<Map<String, Object>>> actualityExecute(CalciteConnection connection, String sql) throws Exception;
 
 
 }

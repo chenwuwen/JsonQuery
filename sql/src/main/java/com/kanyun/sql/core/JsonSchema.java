@@ -53,7 +53,7 @@ public class JsonSchema extends AbstractSchema {
 //         从指定路径下,获取指定文件
         File[] files = directory.listFiles((dir, name) -> name.endsWith("json"));
         if (files == null) {
-            log.warn("Schema: [{}],需要从指定路径[{}]未找到符合条件的文件", schema, directory);
+            log.warn("Schema: [{}],从指定路径[{}] 下未找到符合条件的文件", schema, directory);
             files = new File[0];
         }
         final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();

@@ -13,8 +13,8 @@ import java.sql.Connection;
  * 比如状态信息{@link PooledObjectState}(已用、未用、空闲)，创建时间，激活时间，关闭时间等。这些添加的信息方便pool来管理和实现一些特定的操作
  */
 public class CalciteConnectionPooledObject extends DefaultPooledObject<CalciteConnection> {
-    private static final Logger logger = LoggerFactory.getLogger(CalciteConnectionPooledObject.class);
 
+    private static final Logger logger = LoggerFactory.getLogger(CalciteConnectionPooledObject.class);
 
     /**
      * Creates a new instance that wraps the provided object so that the pool can
@@ -23,17 +23,18 @@ public class CalciteConnectionPooledObject extends DefaultPooledObject<CalciteCo
      * @param object The object to wrap
      */
     public CalciteConnectionPooledObject(CalciteConnection object) {
-
         super(object);
     }
 
     /**
-     * 代理对象被调用时,会回调这个方法
+     * 代理对象(前提是使用代理连接池)每个方法被调用时,会回调这个方法
+     * {@link org.apache.commons.pool2.proxy.ProxiedObjectPool}
      */
     @Override
     public void use() {
-        Connection connection = getObject();
-        logger.info("代理对象use()方法被调用,{}", connection);
+        CalciteConnection connection = getObject();
+
+        logger.debug("代理对象use()方法被调用,{}", connection);
         super.use();
     }
 }

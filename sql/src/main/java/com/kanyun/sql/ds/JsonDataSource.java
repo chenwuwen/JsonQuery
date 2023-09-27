@@ -23,8 +23,15 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
- * DataSource类用以获取Connection,池化
+ * DataSource类用以获取Connection,同时缓存了连接(池化) 以实现连接的回收和复用
+ * 实现池化的原理是初始化时创建指定  {@link #MIN_CONNECTION} 数量的连接(Proxy),并放入链表中 {@link #connectionPool}
+ * 而创建的连接,其实是{@link CalciteConnection}接口的代理对象 {@link #createProxyConnection(String)}
+ * 而代理对象增强了{@link CalciteConnection#close()} 接口方法,当调用该方法时,将连接归还到链表中{@link #connectionPool}
+ * 以上实现了连接的复用,同时当连接数过多超过了预设的数量{@link #MIN_CONNECTION} 时,则创建先的连接
+ * 此时创建的新连接并非{@link CalciteConnection}接口的代理对象,当新创建的连接使用完毕,并不会归还到链表中 {@link #connectionPool}
+ * Deprecated use {@link com.kanyun.sql.ds.pool.CalciteConnectionBuilder}
  */
+@Deprecated
 public class JsonDataSource implements DataSource {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(JsonDataSource.class);
@@ -32,14 +39,14 @@ public class JsonDataSource implements DataSource {
     /**
      * 最小连接数,即核心连接数
      */
-    private static final Integer MIN_CONNECTION = 5;
+    private static final Integer MIN_CONNECTION = 2;
 
     /**
      * 连接池,当需要获取连接时,从连接池中获取,并移除该连接,当调用连接的close()方法时,将连接重新放到连接池中
      * 可配合当前可用连接池和不可用连接池来实现最大/小连接数,当获取连接时如果可用连接池已用尽,然后创建新的连接并添加到不可用连接池
      * 当再次创建连接时,先判断指定的连接池大小和当前不可用连接池的大小之和是否超过最大连接数
      */
-    private static final LinkedList<Connection> connectionPool = new LinkedList<>();
+    private static final LinkedList<CalciteConnection> connectionPool = new LinkedList<>();
 
     static Properties info;
 
@@ -63,24 +70,27 @@ public class JsonDataSource implements DataSource {
         connectionPool.clear();
         this.modelJson = modelJson;
         for (int i = 0; i < MIN_CONNECTION; i++) {
-            connectionPool.add(createConnection(modelJson));
+            connectionPool.add(createProxyConnection(modelJson));
         }
+        logger.info("初始化DataSource完毕,设置的最小连接数:{}", MIN_CONNECTION);
     }
 
 
     @Override
-    public Connection getConnection() throws SQLException {
+    public CalciteConnection getConnection() throws SQLException {
 //        判断当前连接池的可用连接数量
         if (connectionPool.size() > 0) {
+            logger.debug("当前DataSource中存在可用连接,取出第一个可用连接");
 //            取出连接池的第一个连接
             return connectionPool.removeFirst();
         }
+        logger.debug("当前DataSource中不存在可用连接,准备创建新连接");
 //        如果连接池中连接数量不足,则创建新的连接
-        return createNewConnection(modelJson);
+        return createConnection(modelJson);
     }
 
     @Override
-    public Connection getConnection(String username, String password) throws SQLException {
+    public CalciteConnection getConnection(String username, String password) throws SQLException {
         return getConnection();
     }
 
@@ -127,38 +137,31 @@ public class JsonDataSource implements DataSource {
      * @return
      * @throws SQLException
      */
-    private Connection createConnection(String modelJson) throws SQLException {
-//        创建连接并实例化schema/table,亦可以通过编程方法创建schema/table
+    private CalciteConnection createProxyConnection(String modelJson) throws SQLException {
+//        另一种获取链接的方法
+//        info.put("model", modelJson);
+//        Connection connection = DriverManager.getConnection("jdbc:calcite:", info);
+//        创建连接并实例化schema/table,亦可以通过编程方法创建schema/table(获取连接,此操作将初始化数据库,将调用 com.kanyun.sql.core.JsonSchemaFactory)
         Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
+        ClassLoader classLoader = connection.getClass().getClassLoader();
         CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
-//        函数注册
+//        自定义函数/内置函数注册
         registerFunc(calciteConnection);
-        ClassLoader classLoader = calciteConnection.getClass().getClassLoader();
+        ConnectionInvocationHandler connectionHandler = new ConnectionInvocationHandler(calciteConnection);
 //        创建动态代理对象(代理CalciteConnection接口的子类)
-        Connection connectionProxy = (Connection) Proxy.newProxyInstance(classLoader, new Class[]{CalciteConnection.class}, new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-//                    判断执行方法是否是close()方法,如果是:则增强,如果不是:则执行被代理者原本的方法
-                if (method.getName().equals("close")) {
-                    logger.debug("当前Connection是被代理的Connection,调用close()方法时,执行增强的close()方法");
-//                    增强close(),将当前调用关闭方法的连接对象加到连接池中,实现修改close()方法
-                    connectionPool.addLast((Connection) proxy);
-                    return null;
-                }
-//                    不需要增强的方法,就不需要改动
-                return method.invoke(proxy, args);
-            }
-        });
+        CalciteConnection connectionProxy = (CalciteConnection) Proxy.newProxyInstance(classLoader, new Class[]{CalciteConnection.class}, connectionHandler);
         return connectionProxy;
     }
 
     /**
-     * 创建新的连接,该连接不可复用
+     * 创建新的连接,该连接不可复用,用完即毁
+     * 因此,它返回的不是代理对象,没有增强{@link Connection#close()} 方法
+     *
      * @param modelJson
      * @return
      * @throws SQLException
      */
-    private Connection createNewConnection(String modelJson) throws SQLException {
+    private CalciteConnection createConnection(String modelJson) throws SQLException {
 //       创建连接并实例化schema/table,亦可以通过编程方法创建schema/table
         Connection connection = DriverManager.getConnection("jdbc:calcite:model=inline:" + modelJson, info);
         CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
@@ -180,5 +183,42 @@ public class JsonDataSource implements DataSource {
         AbstractFuncSource.registerFunction(rootSchema);
 //        注册聚合函数
         AbstractFuncSource.registerAggFunction(rootSchema);
+    }
+
+    /**
+     * 代理类调用程序 主要方法:{@link #invoke(Object, Method, Object[])}
+     */
+    class ConnectionInvocationHandler implements InvocationHandler{
+
+
+        /**
+         * 被代理的对象(接口)
+         */
+        private CalciteConnection connection;
+
+        public ConnectionInvocationHandler(CalciteConnection connection) {
+            this.connection = connection;
+        }
+
+        /**
+         *
+         * @param proxy  就是代理对象，newProxyInstance方法的返回对象
+         * @param method  调用的方法
+         * @param args  方法中的参数
+         * @return
+         * @throws Throwable
+         */
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+//            判断执行方法是否是close()方法,如果是:则增强,如果不是:则执行被代理者原本的方法
+            if (method.getName().equals("close")) {
+                logger.debug("当前Connection是被代理的Connection,调用close()方法时,执行增强的close()方法");
+//                增强close()方法,将当前调用关闭方法的连接对象(即CalciteConnection)加到连接池中,实现连接复用
+                connectionPool.addLast(connection);
+                return null;
+            }
+//            不需要增强的方法,就不需要改动,需要改动(则可以在方法调用之前/之后添加自定义操作)
+            return method.invoke(connection, args);
+        }
     }
 }

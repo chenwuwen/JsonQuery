@@ -38,7 +38,17 @@ public class SqlExecutor extends AbstractSqlExecutor{
 
     private static final Logger log = LoggerFactory.getLogger(SqlExecutor.class);
 
-    public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) {
+
+    /**
+     * SQL执行,供外部调用,会先执行父类的获取CalciteConnection,然后执行父类的SQL分析
+     * 最后执行本类的 {@link #actualityExecute(CalciteConnection, String)}方法
+     * @param modelJson
+     * @param defaultSchema
+     * @param sql
+     * @return
+     * @throws Exception
+     */
+    public static Pair<Map<String, Integer>, List<Map<String, Object>>> execute(String modelJson, String defaultSchema, String sql) throws Exception {
         return new SqlExecutor().executeSql(modelJson, defaultSchema, sql);
     }
 

@@ -33,7 +33,7 @@ public class JsonTableColumnFactory {
     /**
      * 数据库表字段缓存
      */
-    private static Cache<String, List<JsonTableColumn>> TABLE_FIELD_CACHE = CacheBuilder
+    private static final Cache<String, List<JsonTableColumn>> TABLE_FIELD_CACHE = CacheBuilder
             .newBuilder()
             .maximumSize(200)
             .recordStats()
@@ -46,7 +46,7 @@ public class JsonTableColumnFactory {
      * Json数据文件小于5m,则加载Json文件全部数据用于解析字段信息
      * 大于5m,采用流式解析Json文件获取字段信息
      */
-    private static Integer MAX_LENGTH = 5 * 1024 * 1024;
+    private static final Integer MAX_LENGTH = 5 * 1024 * 1024;
 
     /**
      * 获取表的字段信息
@@ -186,7 +186,7 @@ public class JsonTableColumnFactory {
 
         @Override
         public List<JsonTableColumn> call() throws Exception {
-//            todo 先通过 schemaName和tableName 查询数据库或者配置文件获取字段信息,非常重要因为配置文件或数据库中可能保存了手动维护的字段信息,这往往比解析文件获取的字段信息准确的多
+//            先通过 schemaName和tableName 查询数据库或者配置文件获取字段信息(非常重要),因为配置文件或数据库中可能保存了手动维护的字段信息,这往往比解析文件获取的字段信息准确的多
             List<JsonTableColumn> jsonTableColumn = getJsonTableColumn(schemaName, tableName);
             if (jsonTableColumn.size() != 0) return jsonTableColumn;
             long length = jsonFile.length();

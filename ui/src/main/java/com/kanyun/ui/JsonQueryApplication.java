@@ -21,25 +21,22 @@ public class JsonQueryApplication extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage splashStage) {
 //        去掉最大化,最小化,关闭 按钮 不显示标题栏
-        primaryStage.initStyle(StageStyle.TRANSPARENT);
-        primaryStage.setOnShowing(event -> {
+        splashStage.initStyle(StageStyle.TRANSPARENT);
+        splashStage.setOnShowing(event -> {
 //            todo 窗口显示监听器数据初始化
         });
-        primaryStage.setOnCloseRequest(event -> {
-//            todo 弹出关闭确认
-        });
-        primaryStage.setTitle(Constant.APP_NAME);
+        splashStage.setTitle(Constant.APP_NAME);
 //        设置为true时,需要按ESC才能退出全屏,全屏状态下,将隐藏标题栏,无法缩小与隐藏
-        primaryStage.setFullScreen(false);
+        splashStage.setFullScreen(false);
 //        欢迎页(过渡页)
         SplashPane splashPane = new SplashPane();
         Scene splashScene = new Scene(splashPane);
-        primaryStage.setScene(splashScene);
+        splashStage.setScene(splashScene);
 //        异步执行初始化操作
-        new Thread(new AsyncInitializer(primaryStage)).start();
-        primaryStage.show();
+        new Thread(new AsyncInitializer(splashStage)).start();
+        splashStage.show();
 //        播放动画
         splashPane.playAnimation();
     }
