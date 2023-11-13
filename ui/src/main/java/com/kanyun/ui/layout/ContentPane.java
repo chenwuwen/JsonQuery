@@ -8,6 +8,7 @@ import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -36,6 +37,7 @@ public class ContentPane extends TabPane {
         Tab objTab = new Tab(TabObjectsPane.TAB_NAME);
         objTab.setContent(new TabObjectsPane());
         objTab.setClosable(false);
+
         getTabs().add(objTab);
 //        注意手动切换一下用以触发监听,由于当前Tab页中只存在一个Tab,因此在add()后会显示当前的Tab,但不会触发监听
 //        同时需要注意的是,由于触发监听后会发射事件,因此要保证在发射事件时,可以lookup()到对应的EventTarget
@@ -140,12 +142,17 @@ public class ContentPane extends TabPane {
                     String newTabName = tableModel.getTableName() + " @" + tableModel.getSchemaName();
 //                    查看当前Tab页是否存在,不存在继续执行,存在则切换到对应Tab页,并且消费掉事件,EventHandler不再执行
                     ObservableList<Tab> tabs = getTabs();
-                    Optional<Tab> first = tabs.stream().filter(tab -> tab.getText().equals(newTabName)).findFirst();
+//                    这里判断是否存在是根据Tab名称和Tab#Content的类型来判断的,只有名称和类型都符合了才切换过去
+                    Optional<Tab> first = tabs.stream().filter(tab -> {
+                        TabKind tabKind = (TabKind) tab.getContent();
+                        return tab.getText().equals(newTabName) && tabKind.getTabKind() == TabKindEnum.TABLE_TAB;
+                    }).findFirst();
                     if (first.isPresent()) {
 //                        切换到指定Tab上
                         getSelectionModel().select(first.get());
 //                        阻止事件传递 addEventHandler() 将不再执行
                         event.consume();
+
                     }
                 }
                 if (eventType == UserEvent.INSPECT_TABLE) {
@@ -156,7 +163,7 @@ public class ContentPane extends TabPane {
         });
 
 
-//        监听Tab页切换(新增Tab页时也会触发该监听)
+//        监听Tab页切换(新增Tab页时也会触发该监听,当然如果需要实现这个功能,需要在新增Tab页后,主动选中到该Tab页)
         getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Tab>() {
             @Override
             public void changed(ObservableValue<? extends Tab> observable, Tab oldValue, Tab newValue) {
@@ -167,6 +174,7 @@ public class ContentPane extends TabPane {
                 }
                 Node content = newValue.getContent();
                 TabKind tabKind = (TabKind) content;
+                tabKind.onShown();
                 TabKindEnum kind = tabKind.getTabKind();
 //                发射动态设置信息栏事件,每个Tab都持有一个StatusBar的引用
                 UserEvent userEvent = new UserEvent(UserEvent.DYNAMIC_SETTING_STATUS_BAR);
@@ -184,6 +192,22 @@ public class ContentPane extends TabPane {
                 }
                 userEvent.setStatusBar(tabKind.getDynamicInfoStatusBar());
                 UserEventBridgeService.bridgeUserEvent2BottomInfoPane(userEvent);
+            }
+        });
+
+//        对Tab页进行监听
+        getTabs().addListener(new ListChangeListener<Tab>() {
+            @Override
+            public void onChanged(Change<? extends Tab> c) {
+                while (c.next()) {
+                    log.info("内容页Tab数量发生了变化");
+//                    判断是否是添加了元素
+                    if (c.wasAdded()) {
+//                        Tab tab = c.getAddedSubList().get(0);
+//                        TabKind tabKind = (TabKind) tab.getContent();
+//                        tabKind.onShown();
+                    }
+                }
             }
         });
     }

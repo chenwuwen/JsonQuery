@@ -4,8 +4,9 @@ import com.jfoenix.controls.JFXButton;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.IconProperties;
 import com.kanyun.ui.JsonQuery;
+import com.kanyun.ui.components.MultiQueryResultPane;
 import com.kanyun.ui.components.SqlComponent;
-import com.kanyun.ui.components.statusbar.AppStatusBar;
+import com.kanyun.ui.components.appstatusbar.AppStatusBar;
 import com.kanyun.ui.event.StatusBarProgressTask;
 import com.kanyun.ui.event.UserEvent;
 import com.kanyun.ui.model.DataBaseModel;
@@ -17,25 +18,29 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.controlsfx.control.SearchableComboBox;
 import org.controlsfx.control.StatusBar;
 import org.controlsfx.dialog.ExceptionDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -57,6 +62,11 @@ public class TabQueryPane extends AbstractTab {
     private SqlComponent sqlComponent;
 
     /**
+     * SQL执行结果TabPane
+     */
+    private MultiQueryResultPane multiQueryResultPane = new MultiQueryResultPane();
+
+    /**
      * 动态信息栏
      */
     private StatusBar dynamicInfoStatusBar;
@@ -71,6 +81,10 @@ public class TabQueryPane extends AbstractTab {
      */
     private Button stopButton;
 
+    /**
+     * 导出查询结果按钮
+     */
+    private Button exportButton;
     /**
      * 当前正在执行的SQL
      */
@@ -87,6 +101,12 @@ public class TabQueryPane extends AbstractTab {
     private StatusBarProgressTask statusBarProgressTask;
 
     /**
+     * 主要的内容区域,采用分隔组件,默认分隔组件只有一个Item
+     * 即 {@link #sqlComponent} 当SQL运行并产生结果时,再添加一个Item {@link #multiQueryResultPane}
+     */
+    private SplitPane contentArea = new SplitPane();
+
+    /**
      * 当前Schema
      */
     private SimpleStringProperty currentSchema = new SimpleStringProperty();
@@ -94,27 +114,24 @@ public class TabQueryPane extends AbstractTab {
     public TabQueryPane() {
         log.debug("TabQueryPane 新建查询页面被打开,当前默认数据库是：[{}]", currentSchema.get());
 //        工具栏
-        HBox toolBar = new HBox();
+        ToolBar toolBar = new ToolBar();
 //        设置子组件间间距
-        toolBar.setSpacing(10);
-        toolBar.setPadding(new Insets(5, 0, 5, 2));
+        toolBar.setPadding(new Insets(3, 5, 3, 5));
         initToolBar(toolBar);
 //        初始化SQL组件
-        sqlComponent = new SqlComponent(currentSchema) {
-            @Override
-            public StatusBar getDynamicStatusBar() {
-                return dynamicInfoStatusBar;
-            }
-        };
+        sqlComponent = new SqlComponent(currentSchema);
+//        设置分隔布局的方向
+        contentArea.setOrientation(Orientation.VERTICAL);
+        contentArea.getItems().add(sqlComponent);
 //        设置SQL子组件总是填充剩余空间
-        VBox.setVgrow(sqlComponent, Priority.ALWAYS);
-        getChildren().addAll(toolBar, sqlComponent);
+        VBox.setVgrow(contentArea, Priority.ALWAYS);
+        getChildren().addAll(toolBar, contentArea);
     }
 
     /**
      * 初始化工具栏
      */
-    public void initToolBar(HBox toolBar) {
+    public void initToolBar(ToolBar toolBar) {
 //        数据库下拉框
 //        JFXComboBox<String> dataBaseComboBox = new JFXComboBox<>();
         ComboBox<String> dataBaseComboBox = new SearchableComboBox<>();
@@ -136,9 +153,42 @@ public class TabQueryPane extends AbstractTab {
         }
         runButton = getRunButton();
         stopButton = getStopButton();
+        exportButton = getExportButton();
 //        工具栏添加子元素
-        toolBar.getChildren().addAll(dataBaseComboBox, runButton, stopButton, getBeautifyButton());
+        toolBar.getItems().addAll(dataBaseComboBox, runButton, stopButton, getBeautifyButton(), exportButton);
 
+    }
+
+    /**
+     * 创建导出SQL执行结果按钮
+     *
+     * @return
+     */
+    private Button getExportButton() {
+        JFXButton exportBtn = new JFXButton("结果导出");
+        exportBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                FileChooser fileChooser = new FileChooser();
+//                设置初始目录(桌面)
+                fileChooser.setInitialDirectory(new File(System.getProperty("user.home") + File.separator + "Desktop"));
+                fileChooser.setTitle("请选择导出结果的存放位置");
+                fileChooser.getExtensionFilters().add(0, new FileChooser.ExtensionFilter("csv", "*.csv"));
+                fileChooser.getExtensionFilters().add(1, new FileChooser.ExtensionFilter("xlsx", "*.xlsx"));
+//                注意:这里是[保存文件对话框]注意与showOpenMultipleDialog()/showOpenDialog()[打开文件对话框的区别]
+                File saveFile = fileChooser.showSaveDialog(new Stage());
+                if (saveFile != null) {
+                    String saveFilePath = saveFile.getAbsolutePath();
+                    try {
+                        multiQueryResultPane.exportQueryData2XlsxOrCsv(saveFilePath);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }
+        });
+        return exportBtn;
     }
 
 
@@ -199,6 +249,12 @@ public class TabQueryPane extends AbstractTab {
         EventUtil.fireEvent(this, userEvent);
 //       执行SQL
         sqlComponent.executeSQL(currentSchema.get(), sql);
+//        执行SQL时,判断当前TableViewPane是否已加载到界面,如果加载过了,说明之前执行过SQL了,现在重新执行,需要将之前执行的结果清除掉
+        if (contentArea.getItems().size() > 1) {
+//            由于multiQueryResultPane是成员变量,因此只在界面移除multiQueryResultPane是不够的,multiQueryResultPane依然保留了之前查询结果的Tab,因此需要将这些信息移除掉
+            multiQueryResultPane.clearTab();
+            contentArea.getItems().remove(1);
+        }
     }
 
     /**
@@ -326,48 +382,30 @@ public class TabQueryPane extends AbstractTab {
             controlButtonEnableOrDisable(false);
         });
 
-        addEventHandler(UserEvent.EXECUTE_SQL_COMPLETE, event -> {
-            log.debug("接收到SQL执行完成事件,准备停止进度条,并设置查询记录数及查询耗时");
-//            关闭进度条
-            stopSqlExecuteProgressTask();
-            controlButtonEnableOrDisable(true);
-            Map<String, Object> queryInfo = event.getQueryInfo();
-            String cost = "查询耗时：" + TabKind.getSecondForMilliSecond(queryInfo.get("cost")) + "秒";
-            String record = "总记录数：" + queryInfo.get("count");
-            Label costLabel = TabKind.createCommonLabel(cost, dynamicInfoStatusBar, null, Color.GREEN);
-            costLabel.setPrefHeight(dynamicInfoStatusBar.getHeight());
-            Label recordLabel = TabKind.createCommonLabel(record, dynamicInfoStatusBar, null, Color.GREEN);
-            recordLabel.setPrefHeight(dynamicInfoStatusBar.getHeight());
-//            注意这里如果是set(index,node),那么如果指定索引处没有Node将会报错
-            dynamicInfoStatusBar.getRightItems().add(0, new Separator(Orientation.VERTICAL));
-            dynamicInfoStatusBar.getRightItems().add(1, costLabel);
-            dynamicInfoStatusBar.getRightItems().add(2, new Separator(Orientation.VERTICAL));
-            dynamicInfoStatusBar.getRightItems().add(3, recordLabel);
-
-        });
-
         addEventHandler(UserEvent.EXECUTE_MULTI_SQL_COMPLETE, event -> {
-            log.debug("接收到多条SQL执行完成事件,准备停止进度条");
+            log.debug("接收到多条SQL执行完成事件,准备展示查询结果,设置动态信息栏,停止进度条");
+            Map<String, Map<String, Object>> multiSqlExecuteInfo = event.getMultiSqlExecuteInfo();
+            Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>> multiSqlExecuteResult = event.getMultiSqlExecuteResult();
+            String totalCost = event.getTotalCost();
+            multiQueryResultPane.setContent(multiSqlExecuteInfo, multiSqlExecuteResult, dynamicInfoStatusBar, totalCost);
+            contentArea.getItems().add(multiQueryResultPane);
 //            关闭进度条
             stopSqlExecuteProgressTask();
             controlButtonEnableOrDisable(true);
         });
 
         addEventHandler(UserEvent.EXECUTE_SQL_FAIL, event -> {
-            controlButtonEnableOrDisable(false);
+            controlButtonEnableOrDisable(true);
             stopSqlExecuteProgressTask();
             ExceptionDialog sqlExecuteErrDialog = new ExceptionDialog(event.getException());
             sqlExecuteErrDialog.setTitle("SQL执行失败");
             sqlExecuteErrDialog.setResizable(true);
-//            controlfx的ExceptionDialog弹窗大小时根据异常信息长度自适应的,又由于错误信息可能会比较长,
-//            而ExceptionDialog没有setMaxWidth()/setMaxHeight()方法,因此这里使用容器来承载错误信息
-            TextArea textArea = new TextArea(event.getException().getMessage());
-            textArea.setWrapText(true);
-            textArea.setMaxHeight(getScene().getWidth());
-            textArea.setMaxHeight(getScene().getHeight());
-            textArea.setMinHeight(Region.USE_COMPUTED_SIZE);
-            textArea.setMinWidth(Region.USE_COMPUTED_SIZE);
-            sqlExecuteErrDialog.getDialogPane().setContent(textArea);
+//            controlfx的ExceptionDialog弹窗大小是根据异常信息长度自适应的,又由于错误信息可能会比较长,
+//            而ExceptionDialog没有setMaxWidth()/setMaxHeight()方法,因此这里截断一部分字符,设置错误信息
+//            由于ExceptionDialog还拥有textarea子组件,因此并不妨碍查看完整的错误信息.
+            String contentText = sqlExecuteErrDialog.getContentText();
+//            ExceptionDialog弹窗大小主要取决于内容的大小,setContentText()方法会将错误信息赋值到其label子组件,因此当错误内容较多时,截断一部分错误内容
+            sqlExecuteErrDialog.setContentText(contentText.substring(0, Math.min(contentText.length(), 500)));
             sqlExecuteErrDialog.show();
         });
     }
@@ -375,6 +413,11 @@ public class TabQueryPane extends AbstractTab {
     @Override
     public Node getTabGraphic() {
         return IconProperties.getIcon("tab.query", TAB_GRAPHIC_SIZE, Color.BLUE);
+    }
+
+    @Override
+    public void onShown() {
+
     }
 
 

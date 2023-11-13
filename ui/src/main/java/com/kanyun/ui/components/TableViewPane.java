@@ -10,10 +10,11 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Types;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 自定义TableViewPane,主要用来存放TableView
@@ -115,7 +116,22 @@ public class TableViewPane extends StackPane {
                 };
             }
         });
+    }
 
+    /**
+     * 导出数据
+     * @return
+     */
+    public Pair<List<String>,List<Map<String, Object>>> exportData() {
+        ObservableList<Map<String, Object>> items = tableView.getItems();
+        List<String> collect = tableView.getColumns().stream().map(column -> column.getText()).collect(Collectors.toList());
+        Iterator<Map<String, Object>> iterator = items.iterator();
+        List<Map<String, Object>> tableData = new LinkedList<>();
+        while (iterator.hasNext()) {
+            Map<String, Object> next = iterator.next();
+            tableData.add(next);
+        }
+        return Pair.of(collect, tableData);
     }
 
 }

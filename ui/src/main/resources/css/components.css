@@ -79,11 +79,31 @@
     -fx-margin: 0px;
 }
 
+.text-field:focused{
+    /*-fx-border-color: transparent;*/
+    /*-fx-focus-color: transparent;*/
+    /*-fx-faint-focus-color: transparent;*/
+    /*-fx-focus-border-width: 0;*/
+    /*-fx-border-width: 0;*/
+    /*-fx-background-insets: 0;*/
+    /*-fx-focus-traversable: false;*/
+}
+
+/*.text-field{*/
+/*    -fx-background-insets: 0;*/
+/*    -fx-border-width: 10;*/
+/*    -fx-border-color: -fx-background-color;*/
+/*}*/
+
 /*.tab{*/
-/*设置tab标题与边框的距离*/
+/*!*设置tab标题与边框的距离*!*/
 /*-fx-padding: 2px,2px,2px,2px;*/
 /*}*/
 
+/*取消Tab被选中时的蓝色边框*/
+.tab-pane:focused > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+}
 /*.split-menu-button .arrow-button {*/
 /*    -fx-background-color: transparent ;*/
 /*    -fx-border-width: 0;*/

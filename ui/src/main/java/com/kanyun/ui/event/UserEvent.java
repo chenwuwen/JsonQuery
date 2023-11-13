@@ -1,6 +1,5 @@
 package com.kanyun.ui.event;
 
-import com.kanyun.ui.components.SqlComponent;
 import com.kanyun.ui.model.DataBaseModel;
 import com.kanyun.ui.model.ObjectsTypeEnum;
 import com.kanyun.ui.model.TableModel;
@@ -8,8 +7,10 @@ import com.kanyun.ui.tabs.TabObjectsPane;
 import com.kanyun.ui.tabs.TabQueryPane;
 import javafx.event.Event;
 import javafx.event.EventType;
+import org.apache.commons.lang3.tuple.Pair;
 import org.controlsfx.control.StatusBar;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,9 +34,24 @@ public class UserEvent extends Event {
     private String sql;
 
     /**
-     * 查询过程的信息
+     * 单条SQL执行过程的信息
      */
-    private Map<String, Object> queryInfo;
+    private Map<String, Object> signalSqlExecuteInfo;
+
+    /**
+     * 多条SQL执行过程的信息
+     * key为sql,value为sql执行对应的信息
+     */
+    private Map<String, Map<String, Object>> multiSqlExecuteInfo;
+
+
+    /**
+     * 多条SQL执行结果集合
+     * key为sql,value为sql执行结果(pair#left[结果集的字段信息] pair#right[结果集])
+     */
+    private Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>> multiSqlExecuteResult;
+
+    private String totalCost;
 
     /**
      * 状态条
@@ -161,12 +177,12 @@ public class UserEvent extends Event {
         this.sql = sql;
     }
 
-    public Map<String, Object> getQueryInfo() {
-        return queryInfo;
+    public Map<String, Object> getSignalSqlExecuteInfo() {
+        return signalSqlExecuteInfo;
     }
 
-    public void setQueryInfo(Map<String, Object> queryInfo) {
-        this.queryInfo = queryInfo;
+    public void setSignalSqlExecuteInfo(Map<String, Object> signalSqlExecuteInfo) {
+        this.signalSqlExecuteInfo = signalSqlExecuteInfo;
     }
 
     public StatusBar getStatusBar() {
@@ -191,5 +207,29 @@ public class UserEvent extends Event {
 
     public void setObjectsTypeEnum(ObjectsTypeEnum objectsTypeEnum) {
         this.objectsTypeEnum = objectsTypeEnum;
+    }
+
+    public Map<String, Map<String, Object>> getMultiSqlExecuteInfo() {
+        return multiSqlExecuteInfo;
+    }
+
+    public void setMultiSqlExecuteInfo(Map<String, Map<String, Object>> multiSqlExecuteInfo) {
+        this.multiSqlExecuteInfo = multiSqlExecuteInfo;
+    }
+
+    public Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>> getMultiSqlExecuteResult() {
+        return multiSqlExecuteResult;
+    }
+
+    public void setMultiSqlExecuteResult(Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>> multiSqlExecuteResult) {
+        this.multiSqlExecuteResult = multiSqlExecuteResult;
+    }
+
+    public String getTotalCost() {
+        return totalCost;
+    }
+
+    public void setTotalCost(String totalCost) {
+        this.totalCost = totalCost;
     }
 }

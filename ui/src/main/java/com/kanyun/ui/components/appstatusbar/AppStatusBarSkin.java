@@ -1,8 +1,6 @@
-package com.kanyun.ui.components.statusbar;
+package com.kanyun.ui.components.appstatusbar;
 
 import com.sun.javafx.scene.control.skin.ScrollPaneSkin;
-import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -15,9 +13,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import org.apache.commons.lang3.StringUtils;
 import org.controlsfx.control.StatusBar;

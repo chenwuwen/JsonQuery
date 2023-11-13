@@ -3,6 +3,7 @@ package com.kanyun.ui;
 import com.jfoenix.svg.SVGGlyph;
 import com.jfoenix.svg.SVGGlyphLoader;
 import javafx.scene.Node;
+import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,5 +79,18 @@ public class IconProperties {
      */
     public static Node getIcon(String iconNameKey, double iconSize, Color color) {
         return getIcon(iconNameKey, iconSize, iconSize, color);
+    }
+
+    /**
+     * 获取ImageView图标
+     * @param imgPath
+     * @param iconSize
+     * @return
+     */
+    public static Node getImageView(String imgPath, double iconSize) {
+        ImageView tableImageView = new ImageView(imgPath);
+        tableImageView.setFitHeight(iconSize);
+        tableImageView.setFitWidth(iconSize);
+        return tableImageView;
     }
 }

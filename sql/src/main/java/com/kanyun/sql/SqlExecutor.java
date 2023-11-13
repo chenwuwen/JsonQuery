@@ -79,7 +79,8 @@ public class SqlExecutor extends AbstractSqlExecutor{
         QueryInfoHolder.setExecuteSql(sql);
         resultSet.close();
         statement.close();
-        connection.close();
+//        是否关闭连接要看连接是通过哪种连接池获取的,使用JsonDataSourceFactory.getConnection()获取的连接需要手动关闭,使用DataSourceConnectionPool.getConnection()则不需要
+//        connection.close();
         return executeResult;
     }
 

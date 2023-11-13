@@ -64,6 +64,12 @@ public interface TabKind {
      */
     Node getTabGraphic();
 
+    /**
+     * 当Tab被展示时,回调函数
+     * 一般体现在新建Tab页,或从其他Tab页切回到本Tab页触发
+     */
+    void onShown();
+
 
     /**
      * 动态信息栏初始化

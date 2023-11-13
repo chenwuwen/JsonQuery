@@ -13,12 +13,15 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
+import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -139,11 +142,18 @@ public class SimplicityPaginationToolBar extends ToolBar {
      */
     private void buildPaginationSetNode() {
         paginationSetNodeList = FXCollections.observableArrayList();
+
+        StackPane pageLimitPane = new StackPane();
         pageLimitTextField = new TextField(String.valueOf(PAGE_LIMIT));
         pageLimitTextField.setPrefWidth(PAGE_OPERATE_WIDTH);
-        Label info = new Label("每页显示数量");
+        pageLimitPane.getChildren().add(pageLimitTextField);
+//        使用StackPane包装TextField,用来设置组件外边距
+        pageLimitPane.setPadding(new Insets(0,8,0,8));
+//        文字添加空格,主要也是为了添加边距
+        Label illustrate = new Label("每页显示数量 ");
 //        勾选为限制数量(即pageLimitTextField的值),不勾选为不限制,默认是限制数量
-        CheckBox checkBox = new CheckBox("限制数量");
+        CheckBox checkBox = new CheckBox("限制数量 ");
+//        设置checkbox默认为选中状态
         checkBox.selectedProperty().set(true);
         checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
@@ -165,8 +175,8 @@ public class SimplicityPaginationToolBar extends ToolBar {
                 }
             }
         });
-//        paginationSetNodeList.addAll(checkBox, pageLimitTextField, info);
-        paginationSetNodeList.addAll(info, pageLimitTextField,checkBox );
+//        由于父组件设置了绘制方向,因此此处添加子组件应注意合理安排添加顺序
+        paginationSetNodeList.addAll(illustrate, pageLimitPane,checkBox );
 
     }
 

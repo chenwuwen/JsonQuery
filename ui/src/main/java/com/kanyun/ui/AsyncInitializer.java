@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 异步初始化
@@ -85,7 +84,7 @@ public class AsyncInitializer implements Runnable {
 //        splashStage.centerOnScreen();
         Stage mainStage = new Stage();
         mainStage.setTitle(splashStage.getTitle());
-        mainScene.getStylesheets().addAll("css/button.css", "css/components.css", "css/context-menu.css", "css/app-status-bar.css");
+        mainScene.getStylesheets().addAll("css/button.css", "css/components.css", "css/context-menu.css");
 //        加载JFoenix UI库样式
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-design.css").toExternalForm());
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-fonts.css").toExternalForm());

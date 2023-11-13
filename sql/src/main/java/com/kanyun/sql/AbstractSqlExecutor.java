@@ -47,7 +47,7 @@ public abstract class AbstractSqlExecutor {
      * @return
      * @throws SQLException
      */
-    protected Pair<Map<String, Integer>, List<Map<String, Object>>> executeSql(String modelJson, String defaultSchema, String sql) {
+    protected Pair<Map<String, Integer>, List<Map<String, Object>>> executeSql(String modelJson, String defaultSchema, String sql) throws Exception {
 //        使用连接池获取CalciteConnection
         CalciteConnection connection = DataSourceConnectionPool.getConnection();
 //        CalciteConnection connection = JsonDataSourceFactory.getConnection();
@@ -58,11 +58,8 @@ public abstract class AbstractSqlExecutor {
             sql = sql.trim().replaceAll(";", "");
             sql = analyzeSql(connection, defaultSchema, sql);
             return actualityExecute(connection, sql);
-        } catch (Exception e) {
-            log.error("SQL:{}执行报错:", sql, e);
-            throw new RuntimeException("SQL:" + sql + "执行报错:" + e.getMessage());
         } finally {
-//            归还连接到连接池
+//            归还连接到连接池(使用DataSourceConnectionPool获取连接时需要手动回收)
             DataSourceConnectionPool.recoveryConnection(connection);
         }
     }

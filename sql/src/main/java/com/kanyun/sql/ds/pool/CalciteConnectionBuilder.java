@@ -47,7 +47,7 @@ public class CalciteConnectionBuilder {
      * @throws SQLException
      */
     public static CalciteConnection build(String modelJson) {
-        logger.info("准备创建Calcite连接对象");
+        logger.info("准备创建CalciteConnection");
 //        创建连接并实例化schema/table,亦可以通过编程方法创建schema/table
         CalciteConnection calciteConnection = null;
         try {

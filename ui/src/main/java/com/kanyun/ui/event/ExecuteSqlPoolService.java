@@ -45,7 +45,7 @@ public class ExecuteSqlPoolService extends Service<Map<String, Pair<Map<String, 
     private Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>> queryResultCollection = new LinkedHashMap<>();
 
     /**
-     * 多条SQL的查询信息
+     * 多条SQL的查询信息,非查询结果
      */
     private Map<String, Map<String,Object>> queryInfoCollection = new LinkedHashMap<>();
 

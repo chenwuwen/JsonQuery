@@ -7,7 +7,6 @@ import com.jfoenix.controls.JFXTextArea;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.SqlSuggestionUtil;
 import com.kanyun.ui.event.ExecuteSqlPoolService;
-import com.kanyun.ui.event.ExecuteSqlService;
 import com.kanyun.ui.event.UserEvent;
 import com.sun.javafx.event.EventUtil;
 import com.sun.javafx.scene.control.skin.TextAreaSkin;
@@ -16,40 +15,34 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
-import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.scene.control.IndexRange;
-import javafx.scene.control.SplitPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 /**
- * 新建查询组件(内容区域SQL+结果)
+ * 新建查询组件(内容区域SQL)
  */
-public abstract class SqlComponent extends SplitPane {
+public class SqlComponent extends VBox {
 
     private static final Logger log = LoggerFactory.getLogger(SqlComponent.class);
 
@@ -87,12 +80,6 @@ public abstract class SqlComponent extends SplitPane {
     public SqlComponent(SimpleStringProperty currentSchema) {
         setId("SqlComponent");
         this.currentSchema = currentSchema;
-//        节点中子布局不会随拖动变化大小
-//        setResizableWithParent();
-//        设置分隔布局的方向
-        setOrientation(Orientation.VERTICAL);
-//        添加子组件
-        getItems().addAll(writeSqlArea);
 //        将TextArea的文本属性绑定到SimpleStringProperty,方便后面取值,设值以及监听,双向绑定,注意不要绑定反了,否则TextArea将不能编辑
 //        writeSqlArea.textProperty().bind(currentSqlProperty);
         currentSqlProperty.bind(writeSqlArea.textProperty());
@@ -114,6 +101,8 @@ public abstract class SqlComponent extends SplitPane {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        VBox.setVgrow(writeSqlArea, Priority.ALWAYS);
+        getChildren().add(writeSqlArea);
     }
 
     /**
@@ -128,13 +117,6 @@ public abstract class SqlComponent extends SplitPane {
         if (executeSqlPoolService.isRunning()) {
             log.warn("准备执行SQL:[{}],查询到异步任务当前为运行状态", sql);
         }
-//        执行SQL时,判断当前TableViewPane是否已加载到界面,如果加载过了,说明之前执行过SQL了,现在重新执行,需要将之前执行的结果清除掉
-        if (getItems().size() > 1) {
-//            由于multiQueryResultPane是成员变量,因此只在界面移除multiQueryResultPane是不够的,multiQueryResultPane依然保留了之前查询结果的Tab,因此需要将这些信息移除掉
-            multiQueryResultPane.clearTab();
-            getItems().remove(1);
-        }
-
         executeSqlPoolService.addAllSql(Arrays.asList(sql.split(";"))).setDefaultSchema(defaultSchema).setModelJson(modelJson);
 //        javaFx Service异步任务执行start()方法时,需要保证Service为ready状态,service成功执行后其状态时successed状态,因此再任务结束后(成功/失败/取消),要重置service的状态
         executeSqlPoolService.start();
@@ -171,11 +153,12 @@ public abstract class SqlComponent extends SplitPane {
             Object result = event.getSource().getValue();
             Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>> queryResultCollection = (Map<String, Pair<Map<String, Integer>, List<Map<String, Object>>>>) result;
             Map<String, Map<String, Object>> queryInfoCollection = executeSqlPoolService.getQueryInfoCollection();
-            log.debug("异步(批量)任务{}成功执行完成,将发射事件给父组件,用以更新动态信息栏", queryInfoCollection.keySet());
-            multiQueryResultPane.setContent(queryInfoCollection, queryResultCollection, getDynamicStatusBar(), executeSqlPoolService.getTotalCost());
-            getItems().add(multiQueryResultPane);
+            log.debug("异步(批量)任务{}成功执行完成,将发射事件给父组件,用以更新显示SQL执行结果及动态信息栏", queryInfoCollection.keySet());
 //            发送SQL执行完成事件
             UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_MULTI_SQL_COMPLETE);
+            userEvent.setMultiSqlExecuteInfo(queryInfoCollection);
+            userEvent.setMultiSqlExecuteResult(queryResultCollection);
+            userEvent.setTotalCost(executeSqlPoolService.getTotalCost());
 //            给该组件的父组件发射SQL执行完成事件
             EventUtil.fireEvent(getParent(), userEvent);
             executeSqlPoolService.reset();
@@ -187,15 +170,15 @@ public abstract class SqlComponent extends SplitPane {
 //            创建任务执行失败事件
             UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_FAIL);
             userEvent.setException(event.getSource().getException());
-//            给该组件的父组件发射SQL执行失败事件
+//            给该组件的父组件发射SQL执行失败事件,用于弹出告警框
             EventUtil.fireEvent(getParent(), userEvent);
-            executeSqlPoolService.reset();
+            stopSQL();
         });
 
 //        异步任务取消
         executeSqlPoolService.setOnCancelled(event -> {
             log.warn("异步(批量)任务[{}]被取消", executeSqlPoolService.getSqlList());
-            executeSqlPoolService.reset();
+            stopSQL();
         });
 
         EventHandler<MouseEvent> mouseEventHandler = new EventHandler<MouseEvent>() {
@@ -388,12 +371,5 @@ public abstract class SqlComponent extends SplitPane {
         log.debug("光标所在行的索引范围是:[{}-{}]", lineStartIndex, lineEndIndex);
         return Pair.of(lineStartIndex, lineEndIndex);
     }
-
-    /**
-     * 抽象的方法,由子类实现,返回动态信息栏组件
-     *
-     * @return
-     */
-    protected abstract StatusBar getDynamicStatusBar();
 
 }

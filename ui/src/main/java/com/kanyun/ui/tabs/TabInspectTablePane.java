@@ -146,4 +146,9 @@ public class TabInspectTablePane extends AbstractTab {
         return null;
     }
 
+    @Override
+    public void onShown() {
+
+    }
+
 }

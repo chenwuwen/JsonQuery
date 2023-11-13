@@ -1,0 +1,21 @@
+.objects-label > .container {
+    /*控制元素内部的空间大小以及元素之间的距离*/
+    -fx-padding: 2px;
+    /*控制元素背景的显示范围*/
+    -fx-background-insets: 0, 1;
+    -fx-font-size: 12;
+    -fx-background-color: transparent;
+    /*未hover时也设置边框样式主要是因为,在hover时设置边框,会让元素发生位移,因此直接设置边框样式,颜色改为透明即可*/
+    -fx-border-style: dotted;
+    -fx-border-color: transparent;
+    -fx-border-width: 2;
+}
+
+.objects-label > .container:focused {
+    -fx-background-color: #393f6d;
+    -fx-text-fill: white;
+}
+
+.objects-label > .container:hover {
+    -fx-border-color: rgba(19, 63, 194, 0.27);
+}

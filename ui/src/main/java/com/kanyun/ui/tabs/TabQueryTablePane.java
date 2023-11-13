@@ -21,6 +21,7 @@ import javafx.scene.control.Pagination;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -248,7 +249,7 @@ public class TabQueryTablePane extends AbstractTab {
 
         addEventHandler(UserEvent.EXECUTE_SQL_COMPLETE, event -> {
             log.debug("接收到SQL执行完成事件,准备停止进度条,并设置查询记录数及查询耗时");
-            Map<String, Object> queryInfo = event.getQueryInfo();
+            Map<String, Object> queryInfo = event.getSignalSqlExecuteInfo();
             String cost = "查询耗时：" + TabKind.getSecondForMilliSecond(queryInfo.get("cost")) + "秒";
             String record = "当前页记录数：" + queryInfo.get("count");
             Label costLabel = TabKind.createCommonLabel(cost, dynamicInfoStatusBar, null, Color.GREEN);
@@ -267,7 +268,12 @@ public class TabQueryTablePane extends AbstractTab {
 
     @Override
     public Node getTabGraphic() {
-        return IconProperties.getIcon("tab.query_table", TAB_GRAPHIC_SIZE, Color.BLUE);
+        return IconProperties.getImageView("/asserts/table.png", TAB_GRAPHIC_SIZE);
+    }
+
+    @Override
+    public void onShown() {
+
     }
 
     /**
@@ -306,9 +312,9 @@ public class TabQueryTablePane extends AbstractTab {
             Object sqlResult = event.getSource().getValue();
             Pair<Map<String, Integer>, List<Map<String, Object>>> result = (Pair<Map<String, Integer>, List<Map<String, Object>>>) sqlResult;
             stopSqlExecuteProgressTask();
-//                发送SQL执行完成事件
+//            发送SQL执行完成事件
             UserEvent userEvent = new UserEvent(UserEvent.EXECUTE_SQL_COMPLETE);
-            userEvent.setQueryInfo(executeSqlService.getQueryInfo());
+            userEvent.setSignalSqlExecuteInfo(executeSqlService.getQueryInfo());
             EventUtil.fireEvent(this, userEvent);
             addTableViewAndPagination(result);
             executeSqlService.reset();
