@@ -69,7 +69,7 @@ public class TabObjectsPane extends AbstractTab {
     public TabObjectsPane() {
 
         setId("TabObjectsPane");
-        getChildren().add(initToolBar());
+        getChildren().add(toolBar);
         createObjectsContainer();
         createScrollContainer();
         getChildren().add(scrollPane);
@@ -170,9 +170,8 @@ public class TabObjectsPane extends AbstractTab {
      *
      * @return
      */
-    public Node initToolBar() {
-//        顶部按钮区域
-        ToolBar toolBar = new ToolBar();
+    @Override
+    public void initToolBar() {
         toolBar.setPrefHeight(20);
         toolBar.setPadding(new Insets(2, 4, 2, 4));
         Button openTableBtn = new JFXButton("打开表");
@@ -194,7 +193,6 @@ public class TabObjectsPane extends AbstractTab {
 
         });
         toolBar.getItems().add(openTableBtn);
-        return toolBar;
     }
 
     /**

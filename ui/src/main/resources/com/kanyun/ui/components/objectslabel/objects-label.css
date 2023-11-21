@@ -7,15 +7,29 @@
     -fx-background-color: transparent;
     /*未hover时也设置边框样式主要是因为,在hover时设置边框,会让元素发生位移,因此直接设置边框样式,颜色改为透明即可*/
     -fx-border-style: dotted;
+    /*设置边框颜色透明,只有被hover或或focus时才显示边框*/
     -fx-border-color: transparent;
-    -fx-border-width: 2;
+    -fx-border-width: 1;
 }
 
 .objects-label > .container:focused {
-    -fx-background-color: #393f6d;
-    -fx-text-fill: white;
+    -fx-background-color: #3399FF;
+    -fx-border-color: black;
+}
+
+/**
+ * 想要设置HBox被选中时的字体颜色,需要选中到Text,因此 使用.objects-label > .container:focused Text
+ * 或者 .objects-label > .container:focused * 然后使用-fx-fill属性而不是fx-text-fill属性
+ * -fx-fill用于设置节点的填充颜色,包括背景色,边框色。它适用于任何类型的节点
+ * -fx-text-fill用于设置文本的颜色,只适用于与文本节点,如Text、Label、Button等中的文本部分
+ * -fx-text-fill是一个独立的颜色属性
+ */
+.objects-label > .container:focused Text{
+    /*用该属性无法设置字体颜色*/
+    /*-fx-text-fill: white;*/
+    -fx-fill: white;
 }
 
 .objects-label > .container:hover {
-    -fx-border-color: rgba(19, 63, 194, 0.27);
+    -fx-border-color: black;
 }

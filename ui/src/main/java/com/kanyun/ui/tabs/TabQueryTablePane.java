@@ -16,10 +16,7 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.control.Pagination;
-import javafx.scene.control.Separator;
-import javafx.scene.control.TableColumn;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
@@ -410,6 +407,11 @@ public class TabQueryTablePane extends AbstractTab {
         EventUtil.fireEvent(this, userEvent);
         executeSqlService.setSql(sql).setDefaultSchema(defaultSchema).setModelJson(modelJson);
         executeSqlService.start();
+    }
+
+    @Override
+    void initToolBar() {
+
     }
 }
 

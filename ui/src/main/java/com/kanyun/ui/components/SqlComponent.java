@@ -56,11 +56,6 @@ public class SqlComponent extends VBox {
      */
     private JFXTextArea writeSqlArea = new JFXTextArea();
 
-    /**
-     * SQL执行结果TabPane
-     */
-    private MultiQueryResultPane multiQueryResultPane = new MultiQueryResultPane();
-
 
     /**
      * 当前编写的SQL,与writeSqlArea.textProperty()属性进行了绑定

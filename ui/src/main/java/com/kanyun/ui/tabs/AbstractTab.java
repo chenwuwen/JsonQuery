@@ -1,8 +1,14 @@
 package com.kanyun.ui.tabs;
 
+import javafx.scene.control.ToolBar;
 import javafx.scene.layout.VBox;
 
 public abstract class AbstractTab extends VBox implements TabKind {
+
+    /**
+     * 实例化工具条
+     */
+    protected ToolBar toolBar = new ToolBar();
 
     /**
      * 子类构造方法执行时,先调用父类的构造方法,需要注意的是此时子类的成员变量还未初始化
@@ -14,4 +20,16 @@ public abstract class AbstractTab extends VBox implements TabKind {
 //        保证子类在实例化时,先执行动态信息栏的初始化
         statusBarInit();
     }
+
+
+    @Override
+    public void onCreated() {
+        initToolBar();
+    }
+
+
+    /**
+     * 初始化工具栏
+     */
+    abstract void initToolBar();
 }

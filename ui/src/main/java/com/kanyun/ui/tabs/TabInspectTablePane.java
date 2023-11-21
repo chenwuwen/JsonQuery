@@ -151,4 +151,8 @@ public class TabInspectTablePane extends AbstractTab {
 
     }
 
+    @Override
+    void initToolBar() {
+
+    }
 }

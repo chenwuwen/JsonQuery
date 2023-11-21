@@ -90,13 +90,16 @@ public class AsyncInitializer implements Runnable {
         mainScene.getStylesheets().add(JFoenixResources.load("css/jfoenix-fonts.css").toExternalForm());
 //        讲主场景设置到主窗口区域
         mainStage.setScene(mainScene);
-        mainStage.setOnCloseRequest(event -> {
-//            todo 弹出关闭确认
-        });
+
         mainStage.show();
 //        关闭启动页窗口
         splashStage.close();
-        mainStage.setOnCloseRequest(request -> Platform.exit());
+//        设置窗口关掉仍继续运行,必须调用Platform.exit()才可以退出
+//        Platform.setImplicitExit(false);
+        mainStage.setOnCloseRequest(event -> {
+//            todo 弹出关闭确认,或回调
+            Platform.exit();
+        });
     }
 
     /**

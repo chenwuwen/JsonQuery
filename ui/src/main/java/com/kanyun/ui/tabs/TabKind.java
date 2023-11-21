@@ -70,6 +70,11 @@ public interface TabKind {
      */
     void onShown();
 
+    /**
+     * Tab被创建完成回调
+     */
+    void onCreated();
+
 
     /**
      * 动态信息栏初始化
@@ -119,4 +124,6 @@ public interface TabKind {
         }
         return commonLabel;
     }
+
+
 }

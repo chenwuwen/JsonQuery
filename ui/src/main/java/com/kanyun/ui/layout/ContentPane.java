@@ -203,9 +203,10 @@ public class ContentPane extends TabPane {
                     log.info("内容页Tab数量发生了变化");
 //                    判断是否是添加了元素
                     if (c.wasAdded()) {
-//                        Tab tab = c.getAddedSubList().get(0);
-//                        TabKind tabKind = (TabKind) tab.getContent();
-//                        tabKind.onShown();
+                        Tab tab = c.getAddedSubList().get(0);
+                        TabKind tabKind = (TabKind) tab.getContent();
+//                        添加的Tab后回调onCreated()方法
+                        tabKind.onCreated();
                     }
                 }
             }

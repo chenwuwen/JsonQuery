@@ -113,11 +113,6 @@ public class TabQueryPane extends AbstractTab {
 
     public TabQueryPane() {
         log.debug("TabQueryPane 新建查询页面被打开,当前默认数据库是：[{}]", currentSchema.get());
-//        工具栏
-        ToolBar toolBar = new ToolBar();
-//        设置子组件间间距
-        toolBar.setPadding(new Insets(3, 5, 3, 5));
-        initToolBar(toolBar);
 //        初始化SQL组件
         sqlComponent = new SqlComponent(currentSchema);
 //        设置分隔布局的方向
@@ -131,7 +126,9 @@ public class TabQueryPane extends AbstractTab {
     /**
      * 初始化工具栏
      */
-    public void initToolBar(ToolBar toolBar) {
+    public void initToolBar() {
+//        设置子组件间间距
+        toolBar.setPadding(new Insets(3, 5, 3, 5));
 //        数据库下拉框
 //        JFXComboBox<String> dataBaseComboBox = new JFXComboBox<>();
         ComboBox<String> dataBaseComboBox = new SearchableComboBox<>();
