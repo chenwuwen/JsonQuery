@@ -26,6 +26,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.controlsfx.control.StatusBar;
@@ -69,6 +70,7 @@ public class TabObjectsPane extends AbstractTab {
     public TabObjectsPane() {
 
         setId("TabObjectsPane");
+        setMaxWidth(Integer.MAX_VALUE);
         getChildren().add(toolBar);
         createObjectsContainer();
         createScrollContainer();
@@ -92,7 +94,8 @@ public class TabObjectsPane extends AbstractTab {
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-//        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+//        不允许显示纵向滚动条
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.prefViewportHeightProperty().bind(scrollPane.heightProperty());
     }
 
@@ -105,6 +108,7 @@ public class TabObjectsPane extends AbstractTab {
      * 因此当FlowPane中内容过多时将无法完全显示其内容
      */
     public void createObjectsContainer() {
+        objectsContainer.setMaxWidth(Integer.MAX_VALUE);
         objectsContainer.setPadding(new Insets(10, 0, 10, 10));
 //        设置方向为纵项排列
         objectsContainer.setOrientation(Orientation.VERTICAL);

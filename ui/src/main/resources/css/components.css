@@ -79,7 +79,7 @@
     -fx-margin: 0px;
 }
 
-.text-field:focused{
+.text-field:focused {
     /*-fx-border-color: transparent;*/
     /*-fx-focus-color: transparent;*/
     /*-fx-faint-focus-color: transparent;*/
@@ -100,10 +100,44 @@
 /*-fx-padding: 2px,2px,2px,2px;*/
 /*}*/
 
+.abstractTab {
+    -fx-padding: 0;
+}
+
+.tab-header-area {
+    -fx-padding: 0;
+}
+
+.tool-bar {
+    -fx-background-color: #F0F0F0;
+}
+
+/*Tab栏背景色*/
+.tab-header-area .tab-header-background {
+    -fx-background-color: white;
+}
+
+/*Tab标题位置未选中时背景色*/
+.tab-header-area .headers-region {
+    -fx-background-color: #F8F8F8;
+}
+/*Tab标题位置选中时背景色*/
+.tab-header-area .headers-region:selected {
+    -fx-background-color: #F0F0F0;
+}
+.tab-header-area .headers-region:hover {
+    -fx-background-color: #F8F8F8;
+}
+.tab-header-area .headers-region .tab {
+    -fx-border-color: transparent #F0F0F0 transparent transparent;
+    -fx-background-radius: 0;
+}
+
 /*取消Tab被选中时的蓝色边框*/
 .tab-pane:focused > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
     -fx-border-color: transparent;
 }
+
 /*.split-menu-button .arrow-button {*/
 /*    -fx-background-color: transparent ;*/
 /*    -fx-border-width: 0;*/

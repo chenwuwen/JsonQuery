@@ -17,6 +17,7 @@ public abstract class AbstractTab extends VBox implements TabKind {
      * 因此创建抽象基类,使子类实例化时先调用基类构造方法,初始化动态信息栏
      */
     public AbstractTab() {
+        getStyleClass().add("abstractTab");
 //        保证子类在实例化时,先执行动态信息栏的初始化
         statusBarInit();
     }
