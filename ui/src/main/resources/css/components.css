@@ -100,6 +100,15 @@
 /*-fx-padding: 2px,2px,2px,2px;*/
 /*}*/
 
+/**
+ *-fx-background-insets属性指定了背景填充区域四周的边距,接受Insets对象,有四个参数分别对应上右下左
+ *这个属性通常用来控制控件的内边距和背景填充的大小
+ */
+.scroll-pane{
+    /*去除scrollPane点击边框*/
+    -fx-background-insets: 0;
+}
+
 .abstractTab {
     -fx-padding: 0;
 }

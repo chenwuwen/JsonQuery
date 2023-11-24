@@ -68,9 +68,7 @@ public class TabObjectsPane extends AbstractTab {
     private Node lastFocusedNode;
 
     public TabObjectsPane() {
-
         setId("TabObjectsPane");
-        setMaxWidth(Integer.MAX_VALUE);
         getChildren().add(toolBar);
         createObjectsContainer();
         createScrollContainer();
@@ -91,8 +89,11 @@ public class TabObjectsPane extends AbstractTab {
     private void createScrollContainer() {
         scrollPane = new ScrollPane();
         scrollPane.setContent(objectsContainer);
+//        调整滚动窗格中的组件大小,默认情况下FIT_TO_WIDTH和FIT_TO_HEIGHT属性都为false,即保持内部组件的原始大小,当设置为true时,内部组件将被压缩至适合ScrollPane的尺寸,
         scrollPane.setFitToHeight(true);
-        scrollPane.setFitToWidth(true);
+//        如果滚动条的显示策略为ScrollPane.ScrollBarPolicy.AS_NEEDED,需要将FIT_TO_WIDTH和FIT_TO_HEIGHT属性设为false,否则内容超出后也不显示滚动条
+        scrollPane.setFitToWidth(false);
+//        按需显示横向滚动条,需要注意FIT_TO_WIDTH属性的配置,为false时才能显示滚动条
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 //        不允许显示纵向滚动条
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -108,7 +109,6 @@ public class TabObjectsPane extends AbstractTab {
      * 因此当FlowPane中内容过多时将无法完全显示其内容
      */
     public void createObjectsContainer() {
-        objectsContainer.setMaxWidth(Integer.MAX_VALUE);
         objectsContainer.setPadding(new Insets(10, 0, 10, 10));
 //        设置方向为纵项排列
         objectsContainer.setOrientation(Orientation.VERTICAL);
