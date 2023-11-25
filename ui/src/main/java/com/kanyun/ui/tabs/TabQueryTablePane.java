@@ -1,19 +1,29 @@
 package com.kanyun.ui.tabs;
 
+import com.jfoenix.controls.JFXAlert;
+import com.jfoenix.controls.JFXButton;
 import com.kanyun.sql.core.ModelJson;
 import com.kanyun.ui.IconProperties;
+import com.kanyun.ui.JsonQuery;
 import com.kanyun.ui.components.SimplicityPaginationToolBar;
 import com.kanyun.ui.components.TableViewPane;
 import com.kanyun.ui.event.ExecuteSqlService;
 import com.kanyun.ui.event.SimpleSqlExecuteTask;
 import com.kanyun.ui.event.StatusBarProgressTask;
 import com.kanyun.ui.event.UserEvent;
+import com.kanyun.ui.model.DataBaseModel;
 import com.kanyun.ui.model.TableModel;
 import com.sun.javafx.event.EventUtil;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -22,18 +32,24 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.controlsfx.control.SearchableComboBox;
 import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * 表全量数据Tab
@@ -109,6 +125,7 @@ public class TabQueryTablePane extends AbstractTab {
             executeSqlService = new ExecuteSqlService();
             paginationToolBar = new SimplicityPaginationToolBar(this);
             this.tableModel = tableModel;
+            getChildren().add(toolBar);
             queryTable(tableModel);
             addAsyncTaskListener();
 
@@ -274,7 +291,7 @@ public class TabQueryTablePane extends AbstractTab {
     }
 
     /**
-     * 添加TableView数据及分页信息组件,并添加到视图中
+     * 查询表数据完毕后,添加TableView数据及分页信息组件,并添加到视图中
      *
      * @param result
      */
@@ -411,7 +428,36 @@ public class TabQueryTablePane extends AbstractTab {
 
     @Override
     void initToolBar() {
+//        设置子组件间间距
+        toolBar.setPadding(new Insets(3, 5, 3, 5));
+//        工具栏添加子元素
+        toolBar.getItems().addAll(getExportButton());
+    }
 
+    /**
+     * 创建导出SQL执行结果按钮
+     *
+     * @return
+     */
+    private Button getExportButton() {
+        JFXButton exportBtn = new JFXButton("导出");
+        exportBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "你要导出表的全部记录吗？");
+                alert.setHeaderText(null);
+                alert.getButtonTypes().remove(ButtonType.OK);
+                alert.getButtonTypes().addAll(ButtonType.PREVIOUS, ButtonType.NEXT);
+                Button previousButton = (Button) alert.getDialogPane().lookupButton(ButtonType.PREVIOUS);
+                previousButton.setText("全部记录");
+                Button nextButton = (Button) alert.getDialogPane().lookupButton(ButtonType.NEXT);
+                nextButton.setText(String.format("当前%d条记录",1));
+                alert.showAndWait();
+
+            }
+        });
+        return exportBtn;
     }
 }
 
