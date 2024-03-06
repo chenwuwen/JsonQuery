@@ -45,18 +45,13 @@ public class SplashPane extends StackPane {
      */
     private static final double ANIMATION_SUSTAIN_TIME = 7;
 
-    /**
-     * Svg图像位置
-     */
-    private static String svg_img_path = "classpath:/logo.svg";
-
-
     public SplashPane() {
         setPrefWidth(SCENE_WIDTH);
         setPrefHeight(SCENE_HEIGHT);
-        svg_img_path = getClass().getClassLoader().getResource("logo.svg").getPath();
+//        Svg图像位置(从classPath下找)
+        String svg_img_path = getClass().getClassLoader().getResource("logo.svg").getPath();
+        log.info("LOGO路径:{},是否包含在Jar中:{}", svg_img_path, svg_img_path.contains("!"));
         List<String> paths = SvgAnalysisHelper.getSvgPath(svg_img_path);
-
         Pair<Double, Double> svgSize = SvgAnalysisHelper.getSvgSize(svg_img_path);
         initAnimation(paths, svgSize);
 //        有几个动画就设置几个计数器

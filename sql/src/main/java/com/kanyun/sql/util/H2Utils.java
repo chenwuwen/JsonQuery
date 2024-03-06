@@ -12,7 +12,8 @@ import java.sql.*;
  */
 public class H2Utils {
 
-    private static final String CLASS_PATH = H2Utils.class.getClassLoader().getResource("").getPath();
+//    打成Jar包后执行,报空指针错误
+//    private static final String CLASS_PATH = H2Utils.class.getClassLoader().getResource("").getPath();
 //    private static final String INIT_SQL_FILE_PATH = CLASS_PATH + "sql/"  + "init.sql";
 
 
