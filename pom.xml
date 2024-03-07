@@ -11,6 +11,7 @@
     <modules>
         <module>sql</module>
         <module>ui</module>
+        <module>common</module>
         <module>func</module>
     </modules>
 
@@ -202,7 +203,7 @@
             <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>easyexcel</artifactId>
-                <version>3.3.2</version>
+                <version>3.3.3</version>
             </dependency>
 
             <dependency>
