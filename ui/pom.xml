@@ -108,6 +108,7 @@
                 </configuration>
             </plugin>
 
+
             <!--在打包阶段将依赖的jar包导出到lib目录下-->
             <!--        <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -127,6 +128,36 @@
                             </execution>
                         </executions>
                     </plugin>-->
+
+            <!--<plugin>-->
+            <!--    <groupId>org.apache.maven.plugins</groupId>-->
+            <!--    <artifactId>maven-assembly-plugin</artifactId>-->
+            <!--    <version>3.6.0</version>-->
+            <!--    <executions>-->
+            <!--        <execution>-->
+            <!--            <id>make-assembly</id>-->
+            <!--            &lt;!&ndash; 绑定到package生命周期 &ndash;&gt;-->
+            <!--            <phase>package</phase>-->
+            <!--            <goals>-->
+            <!--                &lt;!&ndash; 只运行一次 &ndash;&gt;-->
+            <!--                <goal>single</goal>-->
+            <!--            </goals>-->
+            <!--        </execution>-->
+            <!--    </executions>-->
+            <!--    <configuration>-->
+            <!--        &lt;!&ndash; 配置描述符文件 &ndash;&gt;-->
+            <!--        &lt;!&ndash;<descriptor>src/main/assembly/assembly.xml</descriptor>&ndash;&gt;-->
+            <!--        &lt;!&ndash;也可以使用Maven预配置的描述符&ndash;&gt;-->
+            <!--        <descriptorRefs>-->
+            <!--            <descriptorRef>jar-with-dependencies</descriptorRef>-->
+            <!--        </descriptorRefs>-->
+            <!--        <archive>-->
+            <!--            <manifest>-->
+            <!--                <mainClass>com.kanyun.ui.JsonQueryApplication</mainClass>-->
+            <!--            </manifest>-->
+            <!--        </archive>-->
+            <!--    </configuration>-->
+            <!--</plugin>-->
 
             <!--将项目的所有依赖项合并到单个可执行的JAR文件中,注意与maven-assembly-plugin插件的区别-->
             <plugin>
@@ -185,7 +216,7 @@
                             <!-- GUI exe 可以包含多个模式GUI模式、命令行模式-->
                             <headerType>gui</headerType>
                             <outfile>target/jsonQuery.exe</outfile>
-                            <jar>target/JsonQuery.jar</jar>
+                            <jar>target/JsonQuery-jar-with-dependencies.jar</jar>
                             <errTitle>App Err</errTitle>
                             <classPath>
                                 <mainClass>com.kanyun.ui.JsonQueryApplication</mainClass>

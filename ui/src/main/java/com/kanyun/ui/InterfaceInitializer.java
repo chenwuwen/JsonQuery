@@ -67,6 +67,8 @@ public class InterfaceInitializer {
         ContentPane contentPane = new ContentPane();
 //        设置分割区域宽度比例
         centerPane.setDividerPositions(DEFAULT_CENTER_AREA_DIVIDER_POSITIONS);
+        // 分割布局添加子项
+        centerPane.getItems().addAll(dataBasePane, contentPane);
 //        监听分割组件中的第一个子组件的分割大小,然后改变BottomInfoPane中的dataBaseInfoStatusBar的大小
         centerPane.getDividers().get(0).positionProperty().addListener(new ChangeListener<Number>() {
             @Override
@@ -77,8 +79,7 @@ public class InterfaceInitializer {
             }
         });
 
-//        分割布局添加子项
-        centerPane.getItems().addAll(dataBasePane, contentPane);
+
         rootPane.setCenter(centerPane);
         return scene;
     }
