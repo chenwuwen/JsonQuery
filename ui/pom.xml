@@ -15,6 +15,7 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <start.class>com.kanyun.ui.JsonQueryApplication</start.class>
     </properties>
 
     <dependencies>
@@ -159,6 +160,7 @@
             <!--    </configuration>-->
             <!--</plugin>-->
 
+
             <!--将项目的所有依赖项合并到单个可执行的JAR文件中,注意与maven-assembly-plugin插件的区别-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -197,67 +199,72 @@
                                 implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <manifestEntries>
                                 <!-- 入口类 -->
-                                <Main-Class>com.kanyun.ui.JsonQueryApplication</Main-Class>
+                                <Main-Class>${start.class}</Main-Class>
                             </manifestEntries>
                         </transformer>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                            <!-- 可选：合并服务,不合并的话,H2驱动会报错(No suitable driver found for jdbc:h2:file)因为程序包含两个数据库驱动,Calcite和H2 -->
-                            <resource>META-INF/services/</resource>
+                            <!-- 合并服务,多个数据库驱动并存的情况不合并的话,H2驱动会报错(No suitable driver found for jdbc:h2:file)因为程序包含两个数据库驱动,Calcite和H2 -->
+                            <resource>META-INF/services/java.sql.Driver</resource>
                         </transformer>
-                </transformers>
-                <artifactSet>
-                    <!--默认所有的依赖都会被解压并平铺到最终的fat-jar中,这里指定要排除的依赖-->
-                    <excludes>
-                        <!--<exclude>*:hutool-all</exclude>-->
-                    </excludes>
-                </artifactSet>
-            </configuration>
-        </plugin>
+                    </transformers>
+                    <artifactSet>
+                        <!--默认所有的依赖都会被解压并平铺到最终的fat-jar中,这里指定要排除的依赖-->
+                        <excludes>
+                            <!--<exclude>*:hutool-all</exclude>-->
+                        </excludes>
+                    </artifactSet>
+                </configuration>
+            </plugin>
 
-        <plugin>
-            <groupId>org.bluestemsoftware.open.maven.plugin</groupId>
-            <artifactId>launch4j-plugin</artifactId>
-            <version>1.5.0.0</version>
-            <executions>
-                <execution>
-                    <id>l4j-gui</id>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>launch4j</goal>
-                    </goals>
-                    <configuration>
-                        <!-- GUI exe 可以包含多个模式GUI模式、命令行模式-->
-                        <headerType>gui</headerType>
-                        <outfile>target/jsonQuery.exe</outfile>
-                        <jar>target/${project.artifactId}-${project.version}-shaded.jar</jar>
-                        <errTitle>App Err</errTitle>
-                        <classPath>
-                            <mainClass>com.kanyun.ui.JsonQueryApplication</mainClass>
-                        </classPath>
-                        <!--<icon>src/main/resources/icons/main.ico</icon>-->
-                        <jre>
-                            <minVersion>1.8.0</minVersion>
-                            <maxVersion>1.8.0_40</maxVersion>
-                            <initialHeapSize>128</initialHeapSize>
-                            <maxHeapSize>1024</maxHeapSize>
-                        </jre>
-                        <versionInfo>
-                            <fileVersion>1.0.0.0</fileVersion>
-                            <txtFileVersion>1.0.0.0</txtFileVersion>
-                            <fileDescription>用SQL查询Json文件</fileDescription>
-                            <copyright>C</copyright>
-                            <productVersion>1.0.0.0</productVersion>
-                            <txtProductVersion>1.0.0.0</txtProductVersion>
-                            <productName>JsonQuery</productName>
-                            <internalName>JsonQuery</internalName>
-                            <originalFilename>App.exe</originalFilename>
-                        </versionInfo>
-                    </configuration>
-                </execution>
-            </executions>
-        </plugin>
+            <!--launch4j将jar包打成exe文件-->
+            <plugin>
+                <groupId>org.bluestemsoftware.open.maven.plugin</groupId>
+                <artifactId>launch4j-plugin</artifactId>
+                <version>1.5.0.0</version>
+                <executions>
+                    <execution>
+                        <id>l4j-gui</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <!-- GUI exe 可以包含多个模式GUI模式、命令行模式-->
+                            <headerType>gui</headerType>
+                            <outfile>target/jsonQuery.exe</outfile>
+                            <jar>target/${project.artifactId}-${project.version}-shaded.jar</jar>
+                            <errTitle>App Err</errTitle>
+                            <classPath>
+                                <mainClass>${start.class}</mainClass>
+                            </classPath>
+                            <!--<icon>src/main/resources/icons/main.ico</icon>-->
+                            <jre>
+                                <minVersion>1.8.0</minVersion>
+                                <maxVersion>1.8.0_40</maxVersion>
+                                <initialHeapSize>128MB</initialHeapSize>
+                                <maxHeapSize>1024MB</maxHeapSize>
+                                <!--设置属性-->
+                                <!--<opt></opt>-->
+                            </jre>
+                            <versionInfo>
+                                <fileVersion>1.0.0.0</fileVersion>
+                                <txtFileVersion>1.0.0.0</txtFileVersion>
+                                <fileDescription>用SQL查询Json文件</fileDescription>
+                                <copyright>C</copyright>
+                                <productVersion>1.0.0.0</productVersion>
+                                <txtProductVersion>1.0.0.0</txtProductVersion>
+                                <productName>JsonQuery</productName>
+                                <internalName>JsonQuery</internalName>
+                                <originalFilename>App.exe</originalFilename>
+                                <!--添加语言选项-->
+                                <!--<language></language>-->
+                            </versionInfo>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
 
-    </plugins>
-</build>
-        </project>
+        </plugins>
+    </build>
+</project>
