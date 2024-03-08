@@ -89,24 +89,24 @@
         <!--https://blog.csdn.net/Ares5kong/article/details/128777500-->
         <plugins>
             <!--生成可执行的 Jar 文件插件,但不会将依赖包函进去,也就是说只是在MANIFEST.MF文件中添加入口类信息-->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
-                <configuration>
-                    <archive>
-                        <addMavenDescriptor>false</addMavenDescriptor>
-                        <manifest>
-                            <!--将项目的依赖信息添加到 MANIFEST.MF 中-->
-                            <addClasspath>true</addClasspath>
-                            <!--将依赖的存放位置添加到 MANIFEST.MF-->
-                            <classpathPrefix>lib/</classpathPrefix>
-                            <!--指定主类-->
-                            <mainClass>com.kanyun.ui.JsonQueryApplication</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
+            <!--<plugin>-->
+            <!--    <groupId>org.apache.maven.plugins</groupId>-->
+            <!--    <artifactId>maven-jar-plugin</artifactId>-->
+            <!--    <version>3.0.2</version>-->
+            <!--    <configuration>-->
+            <!--        <archive>-->
+            <!--            <addMavenDescriptor>false</addMavenDescriptor>-->
+            <!--            <manifest>-->
+            <!--                &lt;!&ndash;将项目的依赖信息添加到 MANIFEST.MF 中&ndash;&gt;-->
+            <!--                <addClasspath>true</addClasspath>-->
+            <!--                &lt;!&ndash;将依赖的存放位置添加到 MANIFEST.MF&ndash;&gt;-->
+            <!--                <classpathPrefix>lib/</classpathPrefix>-->
+            <!--                &lt;!&ndash;指定主类&ndash;&gt;-->
+            <!--                <mainClass>com.kanyun.ui.JsonQueryApplication</mainClass>-->
+            <!--            </manifest>-->
+            <!--        </archive>-->
+            <!--    </configuration>-->
+            <!--</plugin>-->
 
 
             <!--在打包阶段将依赖的jar包导出到lib目录下-->
@@ -174,6 +174,9 @@
                 </executions>
 
                 <configuration>
+                    <!--原始jar名称：xx.jar,最终输出名称 true:xx-shaded.jar false:xx.jar并修改原始名称为original-xx.jar-->
+                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                    <!--生成名为dependency-reduced-pom.xml,这个POM文件去掉了原始pom中已被包含的进fat-jar的依赖项-->
                     <createDependencyReducedPom>true</createDependencyReducedPom>
                     <!-- 解决插件打包后运行报错：Exception in thread "main" java.lang.SecurityException: Invalid signature file digest for Manifest main attributes-->
                     <filters>
@@ -197,54 +200,64 @@
                                 <Main-Class>com.kanyun.ui.JsonQueryApplication</Main-Class>
                             </manifestEntries>
                         </transformer>
-                    </transformers>
-                </configuration>
-            </plugin>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                            <!-- 可选：合并服务,不合并的话,H2驱动会报错(No suitable driver found for jdbc:h2:file)因为程序包含两个数据库驱动,Calcite和H2 -->
+                            <resource>META-INF/services/</resource>
+                        </transformer>
+                </transformers>
+                <artifactSet>
+                    <!--默认所有的依赖都会被解压并平铺到最终的fat-jar中,这里指定要排除的依赖-->
+                    <excludes>
+                        <!--<exclude>*:hutool-all</exclude>-->
+                    </excludes>
+                </artifactSet>
+            </configuration>
+        </plugin>
 
-            <plugin>
-                <groupId>org.bluestemsoftware.open.maven.plugin</groupId>
-                <artifactId>launch4j-plugin</artifactId>
-                <version>1.5.0.0</version>
-                <executions>
-                    <execution>
-                        <id>l4j-gui</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>launch4j</goal>
-                        </goals>
-                        <configuration>
-                            <!-- GUI exe 可以包含多个模式GUI模式、命令行模式-->
-                            <headerType>gui</headerType>
-                            <outfile>target/jsonQuery.exe</outfile>
-                            <jar>target/JsonQuery-jar-with-dependencies.jar</jar>
-                            <errTitle>App Err</errTitle>
-                            <classPath>
-                                <mainClass>com.kanyun.ui.JsonQueryApplication</mainClass>
-                            </classPath>
-                            <!--<icon>src/main/resources/icons/main.ico</icon>-->
-                            <jre>
-                                <minVersion>1.8.0</minVersion>
-                                <maxVersion>1.8.0_40</maxVersion>
-                                <initialHeapSize>128</initialHeapSize>
-                                <maxHeapSize>1024</maxHeapSize>
-                            </jre>
-                            <versionInfo>
-                                <fileVersion>1.0.0.0</fileVersion>
-                                <txtFileVersion>1.0.0.0</txtFileVersion>
-                                <fileDescription>用SQL查询Json文件</fileDescription>
-                                <copyright>C</copyright>
-                                <productVersion>1.0.0.0</productVersion>
-                                <txtProductVersion>1.0.0.0</txtProductVersion>
-                                <productName>JsonQuery</productName>
-                                <internalName>JsonQuery</internalName>
-                                <originalFilename>App.exe</originalFilename>
-                            </versionInfo>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+        <plugin>
+            <groupId>org.bluestemsoftware.open.maven.plugin</groupId>
+            <artifactId>launch4j-plugin</artifactId>
+            <version>1.5.0.0</version>
+            <executions>
+                <execution>
+                    <id>l4j-gui</id>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>launch4j</goal>
+                    </goals>
+                    <configuration>
+                        <!-- GUI exe 可以包含多个模式GUI模式、命令行模式-->
+                        <headerType>gui</headerType>
+                        <outfile>target/jsonQuery.exe</outfile>
+                        <jar>target/${project.artifactId}-${project.version}-shaded.jar</jar>
+                        <errTitle>App Err</errTitle>
+                        <classPath>
+                            <mainClass>com.kanyun.ui.JsonQueryApplication</mainClass>
+                        </classPath>
+                        <!--<icon>src/main/resources/icons/main.ico</icon>-->
+                        <jre>
+                            <minVersion>1.8.0</minVersion>
+                            <maxVersion>1.8.0_40</maxVersion>
+                            <initialHeapSize>128</initialHeapSize>
+                            <maxHeapSize>1024</maxHeapSize>
+                        </jre>
+                        <versionInfo>
+                            <fileVersion>1.0.0.0</fileVersion>
+                            <txtFileVersion>1.0.0.0</txtFileVersion>
+                            <fileDescription>用SQL查询Json文件</fileDescription>
+                            <copyright>C</copyright>
+                            <productVersion>1.0.0.0</productVersion>
+                            <txtProductVersion>1.0.0.0</txtProductVersion>
+                            <productName>JsonQuery</productName>
+                            <internalName>JsonQuery</internalName>
+                            <originalFilename>App.exe</originalFilename>
+                        </versionInfo>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
 
 
-        </plugins>
-    </build>
-</project>
+    </plugins>
+</build>
+        </project>
