@@ -20,6 +20,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <log4j2.version>2.19.0</log4j2.version>
+        <calcite.version>1.36.0</calcite.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -32,7 +33,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>31.1-jre</version>
+                <version>33.0.0-jre</version>
             </dependency>
 
             <!-- 日志依赖Log4j2+Slf4j-->
@@ -79,23 +80,23 @@
             <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-core</artifactId>
-                <version>1.34.0</version>
+                <version>${calcite.version}</version>
             </dependency>
             <!--自定义sql解析必须使用calcite-core依赖,如果需要扩展DDL,也可以再引用calcite-server依赖-->
             <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-server</artifactId>
-                <version>1.34.0</version>
+                <version>${calcite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-file</artifactId>
-                <version>1.34.0</version>
+                <version>${calcite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-csv</artifactId>
-                <version>1.34.0</version>
+                <version>${calcite.version}</version>
                 <scope>test</scope>
             </dependency>
             <!--sql查询结果,格式化输出,注意:子模块使用时需要排除其内部的日志依赖,否则不打印应用内Warn级别以下的日志,或将该依赖的作用范围改为test等-->
