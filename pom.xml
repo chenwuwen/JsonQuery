@@ -21,6 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <log4j2.version>2.19.0</log4j2.version>
         <calcite.version>1.36.0</calcite.version>
+        <mvn.version>3.5.4</mvn.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -111,22 +112,22 @@
             <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-core</artifactId>
-                <version>3.5.4</version>
+                <version>${mvn.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-model</artifactId>
-                <version>3.5.4</version>
+                <version>${mvn.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-model-builder</artifactId>
-                <version>3.5.4</version>
+                <version>${mvn.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-settings</artifactId>
-                <version>3.5.4</version>
+                <version>${mvn.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
