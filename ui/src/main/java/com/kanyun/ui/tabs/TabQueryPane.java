@@ -163,6 +163,10 @@ public class TabQueryPane extends AbstractTab {
      */
     private Button getExportButton() {
         JFXButton exportBtn = new JFXButton("结果导出");
+        FontAwesomeIconView fontAwesomeIcon
+                = new FontAwesomeIconView(FontAwesomeIcon.DOWNLOAD);
+        fontAwesomeIcon.setFill(Color.GREEN);
+        exportBtn.setGraphic(fontAwesomeIcon);
         exportBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -179,7 +183,7 @@ public class TabQueryPane extends AbstractTab {
                     try {
                         multiQueryResultPane.exportQueryData2XlsxOrCsv(saveFilePath);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("结果导出报错：", e);
                     }
 
                 }
