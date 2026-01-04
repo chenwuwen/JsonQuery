@@ -32,7 +32,7 @@ public abstract class AbstractSqlExecutor {
         } else {
             sql = SqlAnalyzerFactory.analysisSql(sql, connection.getRootSchema());
         }
-        log.info("准备执行分析后的SQL:[{}],线程ID：{}", sql, Thread.currentThread().getId());
+        log.info("准备执行分析后的SQL:[{}],线程ID：{}", sql, Thread.currentThread().threadId());
         return sql;
     }
 

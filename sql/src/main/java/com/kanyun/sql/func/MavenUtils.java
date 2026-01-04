@@ -34,7 +34,7 @@ public class MavenUtils {
         SettingsBuilder settingsBuilder = new DefaultSettingsBuilderFactory().newInstance();
         DefaultSettingsBuildingRequest request = new DefaultSettingsBuildingRequest();
 
-        String mavenHome = System.getenv("M2_HOME");
+        String mavenHome = System.getenv("M2_HOME") != null ? System.getenv("M2_HOME") : System.getenv("MAVEN_HOME");
         if (mavenHome != null) {
             File globalSettingsFile = new File(mavenHome + "/conf/settings.xml");
             if (globalSettingsFile.exists()) {
