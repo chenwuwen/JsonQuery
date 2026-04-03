@@ -1,7 +1,7 @@
 package com.kanyun.func.udf.string;
 
 import com.google.gson.JsonParser;
-import sun.misc.BASE64Encoder;
+import java.util.Base64;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Stack;
@@ -49,7 +49,7 @@ public class StringFuncUtil {
             value = "";
         }
         String base64Code = null;
-        base64Code = new BASE64Encoder().encode(value.getBytes("utf-8"));
+        base64Code = Base64.getEncoder().encodeToString(value.getBytes("utf-8"));
         return base64Code;
     }
 
